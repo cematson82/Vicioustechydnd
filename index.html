@@ -20,7 +20,7 @@
     <div class="flex items-center space-x-3">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-500 to-amber-700 flex items-center justify-center text-navy-950"><i class="fa-solid fa-dragon"></i></div>
       <div><h1 class="font-cinzel font-bold text-gold-400 tracking-wider leading-none">REALMFORGE 5E</h1>
-      <p class="text-[10px] text-slate-400"><span id="live-dot" class="inline-block w-2 h-2 rounded-full bg-slate-500 mr-1"></span><span id="live-txt">Connecting…</span></p></div>
+      <p class="text-[10px] text-slate-400"><span id="live-dot" class="inline-block w-2 h-2 rounded-full bg-slate-500 mr-1"></span><span id="live-txt">Connecting…</span><span class="ml-2 text-slate-500">v3</span></p></div>
     </div>
     <button id="btn-auth" data-act="authBtn" class="px-3 py-1.5 rounded-xl border text-xs font-bold bg-navy-800 border-navy-700 text-gold-400"><i class="fa-solid fa-lock mr-1"></i>DM Login</button>
   </div>
@@ -164,8 +164,8 @@
 <button id="req-pill" data-act="goReq" class="hidden fixed bottom-6 right-4 z-40 px-4 py-3 rounded-full bg-rose-600 text-white font-bold text-xs shadow-2xl"></button>
 
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-navy-800 border border-gold-500/50 px-4 py-2.5 rounded-xl shadow-2xl z-50 opacity-0 pointer-events-none transition-opacity text-xs font-semibold"></div>
-  
-<script type="module">
+
+script type="module">
 /*// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCAXGdTewlGoq5dbL9iQHxl5xcNyqiLzwQ",
@@ -237,6 +237,31 @@ const KEEPERS = {
 };
 const TYPES = { general: "GENERAL ADVENTURING SUPPLIES", armory: "WEAPONS & ARMOR", magic: "ARCANE GOODS & POTIONS", blackmarket: "BLACK MARKET & CURIOS", jeweler: "GEMS, JEWELRY & RELICS", cartography: "MAPS & CHARTS" };
 
+const SHOP_DESCS = {
+  general: ["A cramped store where every shelf sags under coils of rope, lanterns and barrels of dried goods.","Bundles of herbs hang from low beams above neatly stacked packs, bedrolls and crates.","A bright, noisy trading post with a hitching rail out front and a half-unloaded cart by the door.","The smell of tallow and leather fills this tidy shop, its walls hung with tools of every sort."],
+  armory: ["The ring of hammer on anvil rolls from a back forge, and racks of blades gleam under the rafters.","Shields line the walls like scales, and a heavy counter bears the scars of a hundred test strikes.","Mannequins in mail stand guard by the door, and the air tastes of coal smoke and oiled steel.","Polished helms watch from high shelves while a grindstone spins lazily in the corner."],
+  magic: ["Violet candlelight flickers over crowded shelves of glowing phials and dusty, whispering tomes.","Charms chime softly overhead, and a faint scent of sulfur and lavender drifts between the shelves.","Stuffed owls and hanging crystals fill this narrow shop, where a cauldron bubbles unattended in the back.","Floating lanterns drift near the ceiling, and some of the books seem to rustle when you look away."],
+  blackmarket: ["A windowless back room lit by a single guttering lamp, with crates stacked to hide what lies behind.","The door has three locks, and the shopkeeper has clearly used none of them in a long while.","Goods lie under a tarp that gets whisked back only for customers who know the right words.","A cellar stall that smells of damp and pipe smoke, with a lookout whistling near the stairs."],
+  jeweler: ["Glass cases glitter beneath hanging lamps, and a velvet curtain hides a heavy iron door.","Soft music plays in this hushed shop where every gem is laid out on black silk.","Mirrors line the walls so every stone catches the light, and a guard stands politely near the door.","The air is perfumed and the floor swept spotless; even the chairs look expensive."],
+  cartography: ["Maps cover every wall in layers, curling at the corners, and rolled charts bristle from barrels.","A huge table dominates the room, inked with half-finished coastlines and sprinkled with brass compasses.","Dried ink and old parchment scent the air, and a globe in the corner has a few suspicious blank patches.","Brass instruments hang from the ceiling, and a map of the realm is pinned with hundreds of tiny flags."]
+};
+const K_ADJ = ["weathered","cheerful","suspicious","soft-spoken","gruff","sharp-eyed","weary","flamboyant","brisk","dour"];
+const K_RACE = ["human","dwarf","halfling","gnome","half-orc","elf","tiefling","dragonborn","half-elf"];
+const K_LOOK = ["with a braided beard dusted in soot","with ink-stained fingers and crooked spectacles","wrapped in a patched traveling cloak","with a gold tooth that flashes when they smile","with a scar across one eyebrow","who wears far too many rings","with silver-streaked hair tied back","with a bright scarf and a ready smile"];
+const K_QUIRK = ["who hums off-key while counting coin","who never quite meets your eyes","who calls every customer 'friend'","who taps the counter when thinking","who keeps a sleepy cat on the counter","who haggles purely for sport","who glances at the door whenever it opens","who speaks only in a low whisper"];
+function makeKeeperDesc() {
+  const adj = rand(K_ADJ), art = /^[aeiou]/i.test(adj) ? 'An' : 'A';
+  return `${art} ${adj} ${rand(K_RACE)} ${rand(K_LOOK)}, ${rand(K_QUIRK)}.`;
+}
+
+function fillShop(x) {
+  if (!x.cat) x.cat = Object.keys(TYPES).find(k => TYPES[k] === x.type) || 'general';
+  if (!x.shopDesc) x.shopDesc = rand(SHOP_DESCS[x.cat] || SHOP_DESCS.general);
+  if (!x.keeperDesc) x.keeperDesc = makeKeeperDesc();
+  if (x.closed === undefined) x.closed = false;
+  return x;
+}
+
 /* ---------- state ---------- */
 let shop = null;          // DM: full shop (with vaultItems). Player: public shop (with vault).
 let isDM = false;
@@ -259,6 +284,7 @@ function newShop(cat, quality) {
   else if (quality === 'average') { pool = pool.filter(i => i.baseCost <= 149); range = [7, 10]; }
   return {
     cat, name: rand(SHOP_NAMES[cat]), type: TYPES[cat], keeper: rand(KEEPERS[cat]), merchantGold: randInt(500, 2500),
+    shopDesc: rand(SHOP_DESCS[cat]), keeperDesc: makeKeeperDesc(), closed: false,
     vaultState: 'locked', persuasionRoll: 0,
     items: shuffle(pool).slice(0, Math.min(pool.length, randInt(...range))).map(i => ({ ...i, stock: randInt(1, 3), cost: i.baseCost })),
     vaultItems: shuffle(VAULT_POOLS[cat]).slice(0, randInt(2, 3)).map(v => ({ ...v, stock: 1, cost: v.baseCost }))
@@ -303,10 +329,15 @@ function render() {
   $('shop-type').textContent = s ? s.type : '';
   $('shop-keeper').textContent = s ? `Proprietor: ${s.keeper}` : '';
   $('shop-gold').textContent = s ? `Merchant Gold: ${(s.merchantGold || 0).toLocaleString()} GP` : '';
+  $('shop-desc').textContent = s ? (s.shopDesc || '') : '';
+  $('keeper-desc').textContent = s ? (s.keeperDesc || '') : '';
+  $('inv-box').classList.toggle('hidden', !!(s && s.closed && !isDM));
+  $('closed-box').classList.toggle('hidden', !(s && s.closed));
+  if (s && s.closed) $('closed-msg').textContent = `${s.keeper || 'The keeper'} was offended and has shut up shop. Perhaps they will reopen once tempers cool.`;
   $('inv').innerHTML = !s ? '' : (s.items.length ? s.items.map(i => card(i, false)).join('') : '<div class="text-xs text-slate-500 italic">No inventory.</div>');
 
   const vault = s ? (isDM ? visibleVault(s) : (s.vault || [])) : [];
-  $('vault-box').classList.toggle('hidden', !s || s.vaultState === 'locked' || !vault.length);
+  $('vault-box').classList.toggle('hidden', !s || s.vaultState === 'locked' || !vault.length || !!(s.closed && !isDM));
   if (s && vault.length) {
     const st = s.vaultState;
     $('vault-badge').textContent = st === 'nat20' ? 'NATURAL 20!' : st === 'full' ? 'Full Access' : st === 'partial' ? 'Partial Access' : 'Restricted';
@@ -314,7 +345,8 @@ function render() {
     $('vault-grid').innerHTML = vault.map(v => card(v, true)).join('');
   }
   $('dm').classList.toggle('hidden', !isDM);
-  $('pl-actions').classList.toggle('hidden', isDM || !shop);
+  $('pl-actions').classList.toggle('hidden', isDM || !shop || shop.closed);
+  $('btn-reopen').classList.toggle('hidden', !(isDM && shop && shop.closed));
   renderRequests();
   const b = $('btn-auth');
   b.innerHTML = isDM ? '<i class="fa-solid fa-lock-open mr-1"></i>DM · Logout' : '<i class="fa-solid fa-lock mr-1"></i>DM Login';
@@ -401,8 +433,23 @@ const A = {
   pinClear() { $('lg-pin').value = ''; },
   async logout() { if (fb) await fb.signOut(fb.auth); isDM = false; haggle = null; reqUnsub?.(); requests = []; if (!LIVE) { render(); return; } shop = null; subscribePlayers(); render(); },
   gen() { shop = newShop($('dm-cat').value, $('dm-qual').value); haggle = null; $('haggle-res').classList.add('hidden'); $('dm-vroll').value = ''; commit(); toast('New shop published!'); },
-  vault() { const r = parseInt($('dm-vroll').value); if (isNaN(r)) return toast('Enter a persuasion total.'); shop.persuasionRoll = r; shop.vaultState = r >= 20 ? 'full' : r >= 15 ? 'partial' : r >= 10 ? 'low' : 'locked'; commit(); toast(shop.vaultState === 'locked' ? 'Vault stays locked.' : 'Vault revealed to players.'); },
+  vault() {
+    if (shop.closed) return toast('The shop is closed. Reopen it first.');
+    const r = parseInt($('dm-vroll').value), dc = parseInt($('dm-vdc').value) || 15;
+    if (isNaN(r)) return toast('Enter a persuasion total.');
+    shop.persuasionRoll = r;
+    shop.vaultState = r < dc ? 'locked' : r < dc + 5 ? 'low' : r < dc + 10 ? 'partial' : 'full';
+    commit();
+    toast(shop.vaultState === 'locked' ? `${r} misses DC ${dc}. Players see nothing.` : `Vault revealed (${shop.vaultState === 'low' ? 'a glimpse' : shop.vaultState === 'partial' ? 'partial' : 'full'}).`);
+  },
+  nat1() {
+    shop.persuasionRoll = 1; $('dm-vroll').value = 1; shop.vaultState = 'locked'; shop.closed = true; haggle = null;
+    $('haggle-res').classList.add('hidden'); commit();
+    toast(`Natural 1! ${shop.keeper || 'The keeper'} is offended and closes the shop.`);
+  },
+  reopen() { shop.closed = false; commit(); toast('Shop reopened.'); },
   nat20() {
+    if (shop.closed) return toast('The shop is closed. Reopen it first.');
     shop.persuasionRoll = 20; $('dm-vroll').value = 20;
     if (!shop.vaultItems.some(i => i.isLegendary)) { const l = rand(LEGENDARY_POOLS[shop.cat] || LEGENDARY_POOLS.general); shop.vaultItems.unshift({ ...l, cost: l.baseCost, stock: 1, isLegendary: true }); }
     shop.vaultState = 'nat20'; commit(); toast('Natural 20! Legendary item unlocked!');
@@ -443,7 +490,7 @@ const A = {
   },
   closeRecap() { $('recap').classList.add('hidden'); haggle = null; $('haggle-res').classList.add('hidden'); $('hg-item').value = ''; $('hg-roll').value = ''; },
   save() { if (!shop) return; const a = getSaved(); a.push({ ...JSON.parse(JSON.stringify(shop)), savedId: 's' + Date.now(), savedDate: new Date().toLocaleDateString() }); putSaved(a); renderSaved(); toast('Store saved.'); },
-  load(id) { const s = getSaved().find(x => x.savedId === id); if (!s) return; shop = JSON.parse(JSON.stringify(s)); haggle = null; commit(); toast(`Loaded "${shop.name}" and published.`); },
+  load(id) { const s = getSaved().find(x => x.savedId === id); if (!s) return; shop = fillShop(JSON.parse(JSON.stringify(s))); haggle = null; commit(); toast(`Loaded "${shop.name}" and published.`); },
   del(id) { putSaved(getSaved().filter(x => x.savedId !== id)); renderSaved(); },
   goReq() { $('req-box').scrollIntoView({ behavior: 'smooth' }); },
   reqBuy(id, v) {
@@ -486,6 +533,7 @@ async function enterDM() {
     } catch (e) { toast('Could not load the live shop.'); }
   }
   if (!shop) shop = newShop('general', 'average');
+  fillShop(shop);
   setStatus(fb ? 'DM · Live' : 'DM · Offline demo', fb ? 'bg-emerald-400' : 'bg-amber-400');
   commit();
 }
