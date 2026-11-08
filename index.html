@@ -155,14 +155,24 @@
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-navy-800 border border-gold-500/50 px-4 py-2.5 rounded-xl shadow-2xl z-50 opacity-0 pointer-events-none transition-opacity text-xs font-semibold"></div>
 
 <script type="module">
-/* ============ 1. PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md) ============ */
+/*// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyCAXGdTewlGoq5dbL9iQHxl5xcNyqiLzwQ",
+  authDomain: "vicioustechydnd.firebaseapp.com",
+  databaseURL: "https://vicioustechydnd-default-rtdb.firebaseio.com",
+  projectId: "vicioustechydnd",
+  storageBucket: "vicioustechydnd.firebasestorage.app",
+  messagingSenderId: "34453051704",
+  appId: "1:34453051704:web:f53caba9f902b87922c9cd",
+  measurementId: "G-SSBYM1EWJR"
+};*/
+const firebaseConfig = {
+  apiKey: "AIzaSyCAXGdTewlGoq5dbL9iQHxl5xcNyqiLzwQ",
+  authDomain: "vicioustechydnd.firebaseapp.com",
+  projectId: "vicioustechydnd",
+  appId: "1:34453051704:web:f53caba9f902b87922c9cd"
 };
-const DM_EMAIL = "PASTE_DM_EMAIL";   // the one Firebase user you created; the PIN is its password
+const DM_EMAIL = "cematson82@gmail.com";   // the one Firebase user you created; the PIN is its password
 /* ========================================================================== */
 
 const LIVE = !firebaseConfig.apiKey.startsWith("PASTE");
