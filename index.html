@@ -37,14 +37,22 @@
         <span class="text-[10px] font-bold uppercase tracking-widest text-gold-400">Current Merchant</span>
         <h2 id="shop-name" class="font-cinzel text-2xl font-extrabold">Waiting for the DM…</h2>
         <p id="shop-type" class="text-xs text-slate-400 mt-1"></p>
+        <p id="shop-desc" class="text-xs text-slate-300 italic mt-2 max-w-lg"></p>
       </div>
       <div class="bg-navy-950/80 p-3 rounded-xl border border-navy-800 text-xs flex flex-col space-y-1">
         <span id="shop-keeper" class="font-bold text-gold-400"></span>
+        <span id="keeper-desc" class="block text-[11px] text-slate-400 italic md:max-w-xs"></span>
         <span id="shop-gold" class="text-emerald-400 font-mono font-bold"></span>
       </div>
     </div>
 
-    <div class="bg-navy-900/80 border border-navy-800 rounded-2xl p-5 space-y-4">
+    <div id="closed-box" class="hidden bg-rose-950/50 border-2 border-rose-700 rounded-2xl p-6 text-center space-y-2">
+      <i class="fa-solid fa-door-closed text-rose-400 text-3xl"></i>
+      <h3 class="font-cinzel font-bold text-xl text-rose-300">Shop Closed</h3>
+      <p id="closed-msg" class="text-xs text-slate-300"></p>
+    </div>
+
+    <div id="inv-box" class="bg-navy-900/80 border border-navy-800 rounded-2xl p-5 space-y-4">
       <h3 class="font-cinzel font-bold text-lg text-gold-400 border-b border-navy-800 pb-3"><i class="fa-solid fa-boxes-packing mr-2"></i>Wares & Inventory</h3>
       <div id="inv" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
@@ -87,11 +95,14 @@
       <button data-act="gen" class="w-full py-3 bg-gradient-to-r from-gold-500 to-amber-600 text-navy-950 font-cinzel font-extrabold text-sm rounded-xl">Generate & Publish New Shop</button>
 
       <div class="grid grid-cols-3 gap-2 items-end pt-2 border-t border-navy-800">
-        <div class="col-span-3 text-xs text-slate-300 font-semibold">Vault Persuasion Check (reveals the vault to players)</div>
+        <div class="col-span-3 text-xs text-slate-300 font-semibold">Vault Persuasion Check: DC, then the player's total</div>
+        <input id="dm-vdc" type="number" value="15" min="5" max="30" title="Vault DC" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
         <input id="dm-vroll" type="number" placeholder="Total" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
         <button data-act="vault" class="py-2 bg-purple-600 text-white font-bold rounded-xl text-xs">Check Vault</button>
         <button data-act="nat20" class="py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-navy-950 font-extrabold rounded-xl text-xs">Nat 20</button>
-        <button data-act="hide" class="col-span-3 py-1.5 bg-navy-800 text-slate-300 rounded-xl text-xs">Hide Vault From Players</button>
+        <button data-act="nat1" class="py-2 bg-rose-700 text-white font-extrabold rounded-xl text-xs">Nat 1</button>
+        <button data-act="hide" class="py-2 bg-navy-800 text-slate-300 rounded-xl text-xs">Hide Vault</button>
+        <button id="btn-reopen" data-act="reopen" class="hidden col-span-3 py-2 bg-rose-950 text-rose-300 border border-rose-800 font-bold rounded-xl text-xs">Reopen Shop (the keeper calmed down)</button>
       </div>
     </div>
 
@@ -153,7 +164,7 @@
 <button id="req-pill" data-act="goReq" class="hidden fixed bottom-6 right-4 z-40 px-4 py-3 rounded-full bg-rose-600 text-white font-bold text-xs shadow-2xl"></button>
 
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-navy-800 border border-gold-500/50 px-4 py-2.5 rounded-xl shadow-2xl z-50 opacity-0 pointer-events-none transition-opacity text-xs font-semibold"></div>
-
+  
 <script type="module">
 /*// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
