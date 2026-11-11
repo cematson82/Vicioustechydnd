@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e172a">
+<title>Realmforge 5E</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{colors:{navy:{950:'#080d1a',900:'#0e172a',800:'#1e293b',700:'#334155'},gold:{300:'#fef08a',400:'#facc15',500:'#eab308',600:'#ca8a04'}}}}}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>.font-cinzel{font-family:'Cinzel',serif}body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}</style>
+</head>
+<body class="bg-navy-950 text-slate-100 min-h-screen pb-24">
+
+<header class="bg-navy-900/95 border-b border-navy-800 sticky top-0 z-40 backdrop-blur">
+  <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-500 to-amber-700 flex items-center justify-center text-navy-950"><i class="fa-solid fa-dragon"></i></div>
+      <div><h1 class="font-cinzel font-bold text-gold-400 tracking-wider leading-none">REALMFORGE 5E</h1>
+      <p class="text-[10px] text-slate-400"><span id="live-dot" class="inline-block w-2 h-2 rounded-full bg-slate-500 mr-1"></span><span id="live-txt">Connecting…</span><span class="ml-2 text-slate-500">v12</span></p></div>
+    </div>
+    <button id="btn-auth" data-act="authBtn" class="px-3 py-1.5 rounded-xl border text-xs font-bold bg-navy-800 border-navy-700 text-gold-400"><i class="fa-solid fa-lock mr-1"></i>DM Login</button>
+  </div>
+</header>
+
+<div id="cfg-banner" class="hidden bg-amber-950/60 border-b border-amber-700 text-amber-200 text-xs text-center p-2">Offline demo mode: Firebase isn't configured yet, so nothing is shared with players. See SETUP.md.</div>
+
+<main class="max-w-5xl mx-auto p-4 space-y-6">
+
+  <!-- DM PAGE NAVIGATION (DM only) -->
+  <nav id="dm-nav" class="hidden grid grid-cols-3 gap-1.5 bg-navy-900 p-1.5 rounded-xl border border-navy-800 text-xs font-semibold">
+    <button id="nav-shop" data-act="page" data-id="shop" class="flex-1 py-2 rounded-lg bg-gold-500 text-navy-950 font-bold"><i class="fa-solid fa-shop mr-1"></i>Shop</button>
+    <button id="nav-enc" data-act="page" data-id="enc" class="flex-1 py-2 rounded-lg text-slate-400"><i class="fa-solid fa-dragon mr-1"></i>Encounter<span id="enc-dot" class="hidden ml-1.5 w-2 h-2 rounded-full bg-rose-500 inline-block align-middle"></span></button>
+    <button id="nav-maps" data-act="page" data-id="maps" class="flex-1 py-2 rounded-lg text-slate-400"><i class="fa-solid fa-map mr-1"></i>Maps</button>
+  </nav>
+
+  <!-- PLAYER REQUESTS (DM only, shown on every DM page) -->
+  <div id="req-box" class="hidden bg-rose-950/30 border-2 border-rose-500/60 rounded-2xl p-5 space-y-3"></div>
+
+  <!-- PAGE 1: SHOP. DM order: controls, shop info + inventory, haggle, saved stores -->
+  <div id="page-shop" class="space-y-6">
+  <!-- DM PANEL (only after login) -->
+    <div id="dm-controls" class="hidden bg-navy-900/80 border border-gold-500/30 rounded-2xl p-5 space-y-4">
+      <h3 class="font-cinzel font-bold text-lg text-gold-400 border-b border-navy-800 pb-3"><i class="fa-solid fa-sliders mr-2"></i>DM Controls</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="block text-xs text-slate-300 mb-1">Shop Category</label>
+          <select id="dm-cat" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm">
+            <option value="general">General Goods & Supplies</option><option value="armory">Armory & Weaponry</option><option value="magic">Arcane Emporium & Potions</option>
+            <option value="blackmarket">Black Market & Curios</option><option value="jeweler">Jeweler & Rare Relics</option><option value="cartography">Cartographer's Guild & Maps</option></select></div>
+        <div><label class="block text-xs text-slate-300 mb-1">Shop Quality</label>
+          <select id="dm-qual" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm">
+            <option value="poor">Poor (5-7 items, max 49 gp)</option><option value="average" selected>Average (7-10 items, max 149 gp)</option><option value="highend">High End (11-15 items)</option></select></div>
+      </div>
+      <button data-act="gen" class="w-full py-3 bg-gradient-to-r from-gold-500 to-amber-600 text-navy-950 font-cinzel font-extrabold text-sm rounded-xl">Generate & Publish New Shop</button>
+      <div class="flex gap-2">
+        <input id="dm-gold" type="number" min="0" placeholder="Set shop gold (gp)" class="flex-1 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-gold-400 font-bold">
+        <button data-act="setGold" class="px-4 py-2 bg-emerald-700 text-white font-bold rounded-xl text-xs">Set Gold</button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 items-end pt-2 border-t border-navy-800">
+        <div class="col-span-3 text-xs text-slate-300 font-semibold">Vault Persuasion Check: DC, then the player's total</div>
+        <input id="dm-vdc" type="number" value="15" min="5" max="30" title="Vault DC" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
+        <input id="dm-vroll" type="number" placeholder="Total" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
+        <button data-act="vault" class="py-2 bg-purple-600 text-white font-bold rounded-xl text-xs">Check Vault</button>
+        <button data-act="nat20" class="py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-navy-950 font-extrabold rounded-xl text-xs">Nat 20</button>
+        <button data-act="nat1" class="py-2 bg-rose-700 text-white font-extrabold rounded-xl text-xs">Nat 1</button>
+        <button data-act="hide" class="py-2 bg-navy-800 text-slate-300 rounded-xl text-xs">Hide Vault</button>
+        <button id="btn-reopen" data-act="reopen" class="hidden col-span-3 py-2 bg-rose-950 text-rose-300 border border-rose-800 font-bold rounded-xl text-xs">Reopen Shop (the keeper calmed down)</button>
+      </div>
+    </div>
+
+  <!-- PLAYER VIEW (everyone sees this) -->
+  <section class="space-y-6">
+    <div id="pl-name-card" class="hidden bg-navy-900/80 border border-navy-800 rounded-2xl p-4 space-y-2">
+      <label class="block text-xs font-semibold text-slate-300">Your character name <span class="text-slate-500 font-normal">(used when you buy, sell or loot)</span></label>
+      <input id="pl-name" type="text" maxlength="30" placeholder="Your character name" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs">
+    </div>
+    <div class="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 border-2 border-gold-500/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-gold-400">Current Merchant</span>
+        <h2 id="shop-name" class="font-cinzel text-2xl font-extrabold">Waiting for the DM…</h2>
+        <p id="shop-type" class="text-xs text-slate-400 mt-1"></p>
+        <p id="shop-desc" class="text-xs text-slate-300 italic mt-2 max-w-lg"></p>
+      </div>
+      <div class="bg-navy-950/80 p-3 rounded-xl border border-navy-800 text-xs flex flex-col space-y-1">
+        <span id="shop-keeper" class="font-bold text-gold-400"></span>
+        <span id="keeper-desc" class="block text-[11px] text-slate-400 italic md:max-w-xs"></span>
+        <span id="shop-gold" class="text-emerald-400 font-mono font-bold"></span>
+      </div>
+    </div>
+
+    <button id="btn-inv" data-act="openInv" class="hidden w-full py-4 bg-gradient-to-r from-gold-500 to-amber-600 text-navy-950 font-cinzel font-extrabold text-base rounded-2xl shadow-lg"><i class="fa-solid fa-boxes-packing mr-2"></i><span id="btn-inv-txt">Inventory</span></button>
+
+    <div id="closed-box" class="hidden bg-rose-950/50 border-2 border-rose-700 rounded-2xl p-6 text-center space-y-2">
+      <i class="fa-solid fa-door-closed text-rose-400 text-3xl"></i>
+      <h3 class="font-cinzel font-bold text-xl text-rose-300">Shop Closed</h3>
+      <p id="closed-msg" class="text-xs text-slate-300"></p>
+    </div>
+
+    <div id="pl-haggle" class="hidden bg-gradient-to-br from-amber-950/30 via-navy-900 to-navy-900 border-2 border-amber-500/40 rounded-2xl p-5 space-y-3">
+      <h3 class="font-cinzel font-bold text-lg text-amber-400"><i class="fa-solid fa-scale-balanced mr-2"></i>Sell or Haggle</h3>
+      <p class="text-[11px] text-slate-400">Tap <strong>Buy</strong> on any item to ask the DM. To sell something, enter it here with your Persuasion roll (d20 + modifier). The DM approves everything.</p>
+      <div class="grid grid-cols-3 gap-2">
+        <input id="pl-item" type="text" maxlength="60" placeholder="Item to sell (e.g. Orc Greatsword)" class="col-span-3 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs">
+        <input id="pl-roll" type="number" min="1" max="40" placeholder="Roll" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-xs text-gold-400 text-center font-bold">
+        <button data-act="reqHaggle" class="col-span-2 py-2 bg-gradient-to-r from-amber-500 to-gold-600 text-navy-950 font-bold rounded-xl text-xs">Ask to Haggle</button>
+      </div>
+    </div>
+
+
+  </section>
+
+    <div id="dm-haggle" class="hidden bg-gradient-to-br from-amber-950/30 via-navy-900 to-navy-900 border-2 border-amber-500/40 rounded-2xl p-5 space-y-4">
+      <h3 class="font-cinzel font-bold text-lg text-amber-400"><i class="fa-solid fa-scale-balanced mr-2"></i>Haggle & Sell (50% base)</h3>
+      <div class="grid grid-cols-3 gap-2">
+        <input id="hg-item" type="text" placeholder="Item to sell (e.g. Longsword +2)" class="col-span-3 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs">
+        <input id="hg-value" type="number" min="1" placeholder="Value override in gp (optional)" class="col-span-3 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs">
+        <input id="hg-roll" type="number" placeholder="Roll" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-xs text-gold-400 text-center font-bold">
+        <input id="dm-dc" type="number" value="15" title="Haggle DC" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-xs text-gold-400 text-center font-bold">
+        <button data-act="haggle" class="py-2 bg-gradient-to-r from-amber-500 to-gold-600 text-navy-950 font-bold rounded-xl text-xs">Haggle</button>
+      </div>
+      <p class="text-[10px] text-slate-400">Middle box is the Haggle DC. Enter the player's Persuasion roll.</p>
+      <div id="haggle-res" class="hidden bg-navy-950 border border-navy-800 rounded-xl p-4 text-xs space-y-3"></div>
+    </div>
+
+
+    <div id="dm-saved" class="hidden bg-navy-900/80 border border-navy-800 rounded-2xl p-5 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h4 class="font-cinzel text-sm font-bold text-gold-400"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Saved Stores (this device)</h4>
+        <button data-act="save" class="px-3 py-1.5 bg-amber-600 text-navy-950 font-bold rounded-xl text-xs">Save Current</button>
+      </div>
+      <div id="saved" class="space-y-2"></div>
+    </div>
+
+  </div>
+
+  <!-- PAGE 2: ENCOUNTER & LOOT (DM only) -->
+  <section id="page-enc" class="hidden space-y-6">
+    <div id="enc-card" class="bg-navy-900/80 border border-navy-800 rounded-2xl p-5">
+      <h3 class="font-cinzel font-bold text-lg text-gold-400"><i class="fa-solid fa-dragon mr-2"></i>Monster Encounter & Loot</h3>
+      <div class="space-y-4 mt-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs text-slate-300 mb-1">Party Level (1-20)</label><input id="enc-level" type="number" min="1" max="20" value="7" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm text-gold-400 font-bold text-center"></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Number of Players</label><input id="enc-size" type="number" min="1" max="10" value="4" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm text-gold-400 font-bold text-center"></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Difficulty</label>
+            <select id="enc-diff" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="deadly">Deadly</option></select></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Terrain / Location</label><select id="enc-env" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="any">Any</option><optgroup label="Terrain"><option value="arctic">Arctic</option><option value="coastal">Coastal</option><option value="desert">Desert</option><option value="forest">Forest</option><option value="grassland">Grassland</option><option value="hill">Hill</option><option value="jungle">Jungle</option><option value="mountain">Mountain</option><option value="swamp">Swamp</option><option value="underdark">Underdark</option><option value="underwater">Underwater</option><option value="urban">Urban</option></optgroup><optgroup label="Planes"><option value="feywild">Feywild</option><option value="shadowfell">Shadowfell</option><option value="hells">Nine Hells</option><option value="abyss">The Abyss</option></optgroup></select></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Blend with (optional)</label><select id="enc-env2" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="none">None</option><optgroup label="Terrain"><option value="arctic">Arctic</option><option value="coastal">Coastal</option><option value="desert">Desert</option><option value="forest">Forest</option><option value="grassland">Grassland</option><option value="hill">Hill</option><option value="jungle">Jungle</option><option value="mountain">Mountain</option><option value="swamp">Swamp</option><option value="underdark">Underdark</option><option value="underwater">Underwater</option><option value="urban">Urban</option></optgroup><optgroup label="Planes"><option value="feywild">Feywild</option><option value="shadowfell">Shadowfell</option><option value="hells">Nine Hells</option><option value="abyss">The Abyss</option></optgroup></select></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Travel</label><select id="enc-road" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="wild">Wilderness (off-road)</option><option value="road">On the road</option></select></div>
+          <div><label class="block text-xs text-slate-300 mb-1">Time of Day</label><select id="enc-time" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="any">Any</option><option value="day">Day</option><option value="night">Night</option></select></div>
+          <div class="col-span-2"><label class="block text-xs text-slate-300 mb-1">Encounter Type</label><select id="enc-type" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-sm"><option value="combat">Combat</option><option value="twist">Combat + a twist</option><option value="scene">Non-combat scene only</option></select></div>
+        </div>
+        <button data-act="forge" class="w-full py-3 bg-gradient-to-r from-gold-500 to-amber-600 text-navy-950 font-cinzel font-extrabold text-sm rounded-xl"><i class="fa-solid fa-dice-d20 mr-2"></i>Forge Encounter</button>
+        <div id="enc-scene"></div>
+        <div id="enc-out"></div>
+        <div id="fallen-ctl" class="hidden grid grid-cols-2 gap-2">
+          <button data-act="showFallen" class="py-2.5 bg-gradient-to-r from-rose-700 to-rose-600 text-white font-bold rounded-xl text-xs"><i class="fa-solid fa-skull mr-1"></i>Show defeated monsters</button>
+          <button data-act="hideFallen" class="py-2.5 bg-navy-800 text-slate-300 rounded-xl text-xs">Hide them again</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 items-end pt-3 border-t border-navy-800">
+          <div class="col-span-3 text-xs text-slate-300 font-semibold">Loot Inspection: DC, then the player's total</div>
+          <input id="loot-dc" type="number" value="10" title="Inspection DC" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
+          <input id="loot-roll" type="number" placeholder="Total" class="bg-navy-950 border border-navy-700 rounded-xl px-2 py-2 text-sm text-gold-400 text-center font-bold">
+          <button data-act="lootRoll" class="py-2 bg-purple-600 text-white font-bold rounded-xl text-xs">Roll Loot</button>
+          <button data-act="lootNat20" class="col-span-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-navy-950 font-extrabold rounded-xl text-xs">Natural 20 (rich haul + 1 magic item)</button>
+          <div class="col-span-3 flex items-center gap-2"><label class="text-xs text-slate-300 whitespace-nowrap">Gold scale ×</label><input id="loot-scale" type="number" step="0.1" min="0" value="1" class="w-24 bg-navy-950 border border-navy-700 rounded-xl px-2 py-1.5 text-sm text-gold-400 text-center font-bold"></div>
+          <p class="col-span-3 text-[10px] text-slate-400">Coins come from each monster: about 10 gp (CR 0-4), 90 gp (CR 5-10), 1,100 gp (CR 11-16) and 9,000 gp (CR 17+) on an average roll. Tiers 3 and 4 are estimates. Below the DC pays a quarter. At the DC: average coins and 1-2 gems. DC+5 or more: double coins, more gems, potions and standard gear. The scale multiplies all coins.</p>
+        </div>
+        <div id="loot-out"></div>
+        <div id="loot-share" class="hidden space-y-2">
+          <button data-act="revealAll" data-v="total" class="w-full py-3 bg-teal-700 text-white font-bold rounded-xl text-sm"><i class="fa-solid fa-sack-dollar mr-1"></i>Show total loot to the party</button>
+          <button data-act="hideLoot" class="w-full py-1.5 bg-navy-800 text-slate-300 rounded-xl text-xs">Hide loot from the party view</button>
+        </div>
+      </div>
+    </div>
+    <div id="loot-req-box" class="hidden bg-emerald-950/30 border-2 border-emerald-500/50 rounded-2xl p-5 space-y-3"></div>
+  </section>
+
+  <!-- PAGE: PLAYER ENCOUNTER (players only; DMs see the Encounter page above) -->
+  <section id="page-penc" class="hidden space-y-6">
+    <div class="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 border-2 border-rose-500/30 rounded-2xl p-5">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-rose-300">Current Encounter</span>
+      <h2 class="font-cinzel text-2xl font-extrabold"><i class="fa-solid fa-dragon mr-2 text-rose-300"></i>Encounter</h2>
+      <p id="penc-empty" class="text-xs text-slate-400 italic mt-1">Nothing here yet. Defeated monsters and loot will appear when the DM shares them.</p>
+    </div>
+    <button id="btn-fallen" data-act="openFallen" class="hidden w-full py-4 bg-gradient-to-r from-rose-700 to-rose-900 text-rose-50 font-cinzel font-extrabold text-base rounded-2xl shadow-lg"><i class="fa-solid fa-skull mr-2"></i><span id="btn-fallen-txt">Defeated Monsters</span></button>
+    <div id="loot-reveal" class="hidden bg-emerald-950/30 border-2 border-emerald-500/50 rounded-2xl p-5 space-y-3"></div>
+  </section>
+
+  <!-- PAGE 3: MAP VIEWER -->
+  <section id="page-maps" class="hidden space-y-4">
+    <!-- DM CONTROLS (DM only) -->
+    <div id="dm-map-ctrl" class="hidden bg-navy-900/80 border border-gold-500/30 rounded-2xl p-4 space-y-3">
+      <h3 class="font-cinzel font-bold text-sm text-gold-400"><i class="fa-solid fa-map-location-dot mr-2"></i>DM Map Selector</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">1. Select Campaign Folder</label>
+          <select id="dm-campaign-select" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium">
+            <option value="">-- Choose Campaign Folder --</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">2. Select Map</label>
+          <select id="dm-map-select" disabled class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium opacity-50 cursor-not-allowed">
+            <option value="">-- Select Campaign First --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP CONTAINER (Zoomable / Pannable Display) -->
+    <div class="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden flex flex-col relative" style="height: 72vh;">
+      <!-- Legal Disclaimer Banner -->
+      <div class="bg-navy-950/95 border-b border-navy-800 p-2 text-[10px] text-slate-400 text-center z-10 leading-tight">
+        Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. This application is an unofficial Fan Content tool permitted under the Fan Content Policy. Not approved or endorsed by Wizards.
+      </div>
+
+      <!-- Zoom & Control Palette -->
+      <div class="absolute top-12 right-4 z-20 flex flex-col gap-1.5 bg-navy-950/80 p-1.5 rounded-xl border border-navy-700 backdrop-blur">
+        <button id="btn-zoom-in" data-act="zoomIn" title="Zoom In" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-gold-400 font-bold"><i class="fa-solid fa-plus"></i></button>
+        <button id="btn-zoom-out" data-act="zoomOut" title="Zoom Out" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-gold-400 font-bold"><i class="fa-solid fa-minus"></i></button>
+        <button id="btn-zoom-reset" data-act="zoomReset" title="Fit to screen" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-slate-300 text-xs font-bold">Fit</button>
+      </div>
+
+      <!-- Interactive Canvas -->
+      <div id="map-viewport" class="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing bg-navy-950 flex items-center justify-center" style="touch-action:none">
+        <div id="map-stage" class="origin-center select-none will-change-transform">
+          <img id="map-img" src="" alt="Active Battle Map" draggable="false" class="max-w-none hidden shadow-2xl rounded pointer-events-none" />
+          <div id="map-placeholder" class="text-xs text-slate-500 italic p-6 text-center">No active map published by the DM.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- LOGIN MODAL -->
+<div id="login" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-navy-900 border border-gold-500/50 rounded-2xl max-w-xs w-full p-6 space-y-3 text-center">
+    <h3 class="font-cinzel font-bold text-lg text-gold-400">DM Authorization</h3>
+    <input id="lg-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••••" class="w-full bg-navy-950 border border-navy-700 text-center font-mono text-2xl tracking-widest text-gold-400 rounded-xl px-4 py-2">
+    <p id="lg-err" class="text-xs text-rose-400 hidden"></p>
+    <div class="grid grid-cols-3 gap-2">
+      <button type="button" data-act="pinDigit" data-id="1" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">1</button>
+      <button type="button" data-act="pinDigit" data-id="2" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">2</button>
+      <button type="button" data-act="pinDigit" data-id="3" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">3</button>
+      <button type="button" data-act="pinDigit" data-id="4" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">4</button>
+      <button type="button" data-act="pinDigit" data-id="5" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">5</button>
+      <button type="button" data-act="pinDigit" data-id="6" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">6</button>
+      <button type="button" data-act="pinDigit" data-id="7" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">7</button>
+      <button type="button" data-act="pinDigit" data-id="8" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">8</button>
+      <button type="button" data-act="pinDigit" data-id="9" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">9</button>
+      <button type="button" data-act="pinClear" class="py-3 bg-rose-950 border border-rose-800 text-rose-300 rounded font-bold text-xs">C</button>
+      <button type="button" data-act="pinDigit" data-id="0" class="py-3 bg-navy-950 border border-navy-800 rounded font-bold text-slate-200 text-lg">0</button>
+      <button type="button" data-act="doLogin" class="py-3 bg-gold-500 text-navy-950 font-bold rounded"><i class="fa-solid fa-check"></i></button>
+    </div>
+    <button data-act="closeLogin" class="w-full py-2 bg-navy-800 rounded-xl text-xs">Cancel</button>
+  </div>
+</div>
+
+<!-- RECAP MODAL -->
+<div id="recap" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-navy-900 border border-gold-500/50 rounded-2xl max-w-md w-full p-6 space-y-4">
+    <h3 class="font-cinzel font-bold text-lg text-gold-400"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>Transaction Recap</h3>
+    <div id="recap-body" class="space-y-3 text-xs"></div>
+    <button data-act="closeRecap" class="w-full py-2 bg-gold-500 text-navy-950 font-bold rounded-xl text-xs">Confirm & Close</button>
+  </div>
+</div>
+
+<button id="req-pill" data-act="goReq" class="hidden fixed bottom-6 right-4 z-40 px-4 py-3 rounded-full bg-rose-600 text-white font-bold text-xs shadow-2xl"></button>
+
+<!-- DEFEATED MONSTERS MODAL -->
+<div id="fallen-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-navy-950 border border-rose-500/40 rounded-t-3xl sm:rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 space-y-4">
+    <div class="flex items-center justify-between sticky top-0 bg-navy-950 pb-2 z-10">
+      <h2 class="font-cinzel font-extrabold text-lg text-rose-300"><i class="fa-solid fa-skull mr-2"></i>Defeated Monsters</h2>
+      <button data-act="closeFallen" class="w-9 h-9 rounded-xl bg-navy-800 text-slate-300 font-bold" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="fallen-box" class="hidden bg-gradient-to-br from-rose-950/30 via-navy-900 to-navy-900 border-2 border-rose-500/40 rounded-2xl p-5 space-y-3"></div>
+  </div>
+</div>
+
+<!-- INVENTORY MODAL -->
+<div id="inv-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-navy-950 border border-gold-500/40 rounded-t-3xl sm:rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 space-y-4">
+    <div class="flex items-center justify-between sticky top-0 bg-navy-950 pb-2 z-10">
+      <h2 class="font-cinzel font-extrabold text-lg text-gold-400"><i class="fa-solid fa-boxes-packing mr-2"></i>Shop Inventory</h2>
+      <button data-act="closeInv" class="w-9 h-9 rounded-xl bg-navy-800 text-slate-300 font-bold" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="inv-box" class="bg-navy-900/80 border border-navy-800 rounded-2xl p-5 space-y-4">
+      <h3 class="font-cinzel font-bold text-lg text-gold-400 border-b border-navy-800 pb-3"><i class="fa-solid fa-boxes-packing mr-2"></i>Wares & Inventory</h3>
+      <div id="inv" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+
+
+<div id="vault-box" class="hidden bg-gradient-to-br from-purple-950/40 via-navy-900 to-navy-900 border-2 border-purple-500/50 rounded-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-purple-500/30 pb-3 gap-2">
+        <h3 class="font-cinzel font-bold text-lg text-purple-400"><i class="fa-solid fa-key mr-2"></i>Under-the-Counter Vault</h3>
+        <span id="vault-badge" class="px-2.5 py-1 rounded bg-purple-900/60 text-purple-300 font-mono text-[11px] font-bold border border-purple-500/40"></span>
+      </div>
+      <p id="vault-flavor" class="text-xs text-slate-300"></p>
+      <div id="vault-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-navy-800 border border-gold-500/50 px-4 py-2.5 rounded-xl shadow-2xl z-50 opacity-0 pointer-events-none transition-opacity text-xs font-semibold"></div>
+
+<script type="module">
+/* ============ 1. PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md) ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCAXGdTewlGoq5dbL9iQHxl5xcNyqiLzwQ",
+  authDomain: "vicioustechydnd.firebaseapp.com",
+  projectId: "vicioustechydnd",
+  appId: "1:34453051704:web:f53caba9f902b87922c9cd"
+};
+const DM_EMAIL = "cematson82@gmail.com";
+/* ========================================================================== */
+
+const LIVE = !firebaseConfig.apiKey.startsWith("PASTE");
+const $ = id => document.getElementById(id);
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const randInt = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const shuffle = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+const mk = (p, rows) => rows.map((r, i) => ({ id: p + (i + 1), name: r[0], type: r[1], baseCost: r[2], desc: r[3] }));
+const toast = m => { const t = $('toast'); t.textContent = m; t.classList.remove('opacity-0'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add('opacity-0'), 2500); };
+
+/* ---------- item data ---------- */
+const ITEM_POOLS = {
+  general: mk('g', [["Hempen Rope (50 ft)","Gear",1,"Sturdy rope."],["Torches (10)","Gear",1,"Burn 1 hour each."],["Rations (5 days)","Food",3,"Dry travel food."],["Bedroll","Gear",1,"Warm and rolled."],["Healer's Kit","Gear",5,"10 uses to stabilize the dying."],["Adventurer's Pack","Gear",12,"Backpack, bedroll, mess kit, rations."],["Climber's Kit","Gear",25,"Pitons, boots, gloves."],["Rowboat","Vehicle",50,"Seats up to four."],["Riding Horse","Mount",75,"Reliable steed."],["Merchant's Cart & Mule","Vehicle",90,"Haul your loot."],["Caravan Wagon","Vehicle",250,"Covered wagon."],["Warhorse","Mount",400,"Trained for battle."],["Spyglass","Gear",1000,"Magnifies distant objects."]]),
+  armory: mk('a', [["Dagger","Weapon",2,"Finesse, light, thrown."],["Handaxe","Weapon",5,"Light, thrown."],["Shortsword","Weapon",10,"Finesse, light."],["Longsword","Weapon",15,"Versatile 1d8/1d10."],["Shield","Armor",10,"+2 AC."],["Leather Armor","Armor",10,"AC 11 + Dex."],["Shortbow","Weapon",25,"Range 80/320."],["Rapier","Weapon",25,"Finesse 1d8."],["Greatsword","Weapon",50,"Heavy 2d6."],["Longbow","Weapon",50,"Range 150/600."],["Chain Shirt","Armor",50,"AC 13 + Dex (max 2)."],["Chain Mail","Armor",75,"AC 16."],["Splint Armor","Armor",200,"AC 17."],["Breastplate","Armor",400,"AC 14 + Dex (max 2)."],["Half Plate","Armor",750,"AC 15 + Dex (max 2)."],["Plate Armor","Armor",1500,"AC 18."]]),
+  magic: mk('m', [["Spell Scroll (Cantrip)","Scroll",25,"Single-use cantrip."],["Arcane Focus","Gear",10,"Crystal or orb."],["Component Pouch","Gear",25,"Spell components."],["Holy Water","Consumable",25,"Damages fiends and undead."],["Acid Vial","Consumable",25,"2d6 acid damage."],["Ink & Quill Set","Gear",10,"For scribing scrolls."],["Potion of Healing","Potion",50,"Restores 2d4+2 HP."],["Antitoxin","Potion",50,"Advantage vs. poison."],["Spellbook","Gear",50,"100 pages."],["Spell Scroll (1st Level)","Scroll",75,"Single-use spell."],["Wand of Magic Detection","Wand",150,"Cast detect magic freely."],["Potion of Greater Healing","Potion",150,"Restores 4d4+4 HP."],["Spell Scroll (3rd Level)","Scroll",300,"Powerful single-use spell."],["Driftglobe","Wondrous",750,"Floating light orb."]]),
+  blackmarket: mk('b', [["Thieves' Tools","Tools",25,"Pick locks, disarm traps."],["Disguise Kit","Tools",25,"Cosmetics and props."],["Forgery Kit","Tools",15,"Fake documents."],["Crowbar","Gear",2,"Advantage on Strength checks to pry."],["Manacles","Gear",2,"Restrain a creature."],["Ball Bearings","Gear",1,"Slippery floor trap."],["Hunting Trap","Gear",5,"Snaps shut on a foot."],["Loaded Dice","Curio",3,"Rigged in your favor."],["Smuggler's Hidden Pouch","Gear",60,"Conceals small items."],["Forged Noble Seal","Curio",75,"Convincing fake."],["Basic Poison (Vial)","Consumable",100,"+1d4 poison damage."],["Stolen Jewelry Pouch","Curio",120,"No questions asked."],["Serpent Venom","Consumable",200,"Potent poison."],["Stolen Guild Cloak","Wondrous",300,"Opens certain doors."],["Oil of Slipperiness","Potion",480,"Grease effect."],["Potion of Invisibility","Potion",500,"1 hour invisible."]]),
+  jeweler: mk('j', [["Silver Ring","Jewelry",5,"Simple band."],["Azurite","Gem",10,"Opaque mottled blue."],["Tiger Eye","Gem",10,"Golden-brown."],["Obsidian","Gem",10,"Black volcanic glass."],["Silver Chalice","Jewelry",25,"Ornate drinking cup."],["Jade Bangle","Jewelry",40,"Carved green jade."],["Moonstone","Gem",50,"Pale blue glow."],["Gold Necklace","Jewelry",75,"Fine chain."],["Pearl","Gem",100,"Lustrous white."],["Ruby Gemstone","Gem",100,"Brilliant cut."],["Sapphire Gemstone","Gem",150,"Deep blue star sapphire."],["Black Pearl","Gem",500,"Rare and prized."],["Emerald","Gem",1000,"Deep green."],["Diamond","Gem",1000,"Flawless."]]),
+  cartography: mk('c', [["Dungeon Sketch Map","Map",5,"Rough, partly accurate."],["Road Atlas Pamphlet","Map",8,"Major roads only."],["Rural Trail & Wilderness Map","Rural Map",10,"Local woods, hills, river crossings."],["Treasure Map (Dubious)","Map",15,"Probably a fake."],["Township & Settlement Layout","Township Map",25,"Inns, smiths, town halls."],["Navigator's Star Chart","Map",30,"Night navigation."],["Local Area Survey Chart","Local Map",50,"Monster lairs and ruins."],["Metropolitan City District Map","City Map",100,"Ward-by-ward guide."],["State & Province Topography","State Map",250,"Duchies, passes, borders."],["Continental Country Atlas","Country Map",600,"Kingdoms and trade roads."],["Legendary World Map","World Map",1500,"Oceans, continents, forgotten realms."]])
+};
+const VAULT_POOLS = {
+  general: mk('vg', [["Bag of Holding","Wondrous",400,"Holds 500 lbs."],["Handy Haversack","Wondrous",500,"Items always at hand."],["Rope of Climbing","Wondrous",500,"Obeys commands."],["Lantern of Revealing","Wondrous",500,"Reveals invisible."],["Boots of Striding","Wondrous",700,"Speed 30 ft min."]]),
+  armory: mk('va', [["+1 Longsword","Weapon",250,"+1 to attack and damage."],["+1 Shield","Armor",250,"+1 extra AC."],["Mithral Chain Shirt","Armor",800,"No Stealth penalty."],["Javelin of Lightning","Weapon",400,"Lightning bolt."],["Sword of Wounding","Weapon",1500,"Wounds don't heal easily."]]),
+  magic: mk('vm', [["Staff of Power","Staff",2500,"+2 AC, +2 spell attacks, 20 charges."],["Wand of Magic Missiles","Wand",500,"7 charges."],["Cloak of Protection","Wondrous",450,"+1 AC and saves."],["Ring of Spell Storing","Ring",1500,"Stores 5 spell levels."],["Rod of the Pact Keeper","Rod",1000,"+1 spell DC."]]),
+  blackmarket: mk('vb', [["Boots of Elvenkind","Wondrous",500,"Silent movement."],["Cloak of Elvenkind","Wondrous",500,"Advantage on Stealth."],["Dagger of Venom","Weapon",1200,"Coats in poison."],["Gloves of Thievery","Wondrous",400,"+5 Sleight of Hand."],["Ring of Mind Shielding","Ring",700,"Immune to mind reading."]]),
+  jeweler: mk('vj', [["Ring of Protection","Ring",450,"+1 AC and saves."],["Amulet of Health","Wondrous",800,"Con becomes 19."],["Pearl of Power","Wondrous",600,"Recover a spell slot."],["Brooch of Shielding","Wondrous",500,"Resist force damage."],["Necklace of Adornment","Wondrous",300,"Never tarnishes."]]),
+  cartography: mk('vc', [["Sextant of True Navigation","Wondrous",1200,"Advantage vs. getting lost."],["Ever-Updating Map","Wondrous",900,"Redraws as you travel."],["Spyglass of Far Sight","Wondrous",1000,"Pierces fog."],["Boots of Striding","Wondrous",700,"Tireless travel."],["Wind Fan","Wondrous",200,"Gust of wind."]])
+};
+const LEGENDARY_POOLS = {
+  general: mk('lg', [["Portable Hole","Wondrous",6000,"Extradimensional hole, 6 ft across."],["Efreeti Bottle","Wondrous",8000,"Houses a powerful efreeti."],["Carpet of Flying","Wondrous",7500,"Flies at your command."],["Eversmoking Bottle","Wondrous",4000,"Billowing smoke on command."]]),
+  armory: mk('la', [["Holy Avenger (Legendary Greatsword)","Weapon",8500,"Emits a 10-foot aura granting advantage on saves against spells."],["Vorpal Sword","Weapon",24000,"+3 weapon that can sever heads on a natural 20."],["Sun Blade","Weapon",12000,"Radiant blade of pure sunlight."],["Frost Brand","Weapon",9000,"Fire resistance and extra cold damage."],["Dragon Scale Mail","Armor",9500,"+1 AC and elemental resistance."],["Plate Armor of Etherealness","Armor",20000,"Step into the Ethereal Plane."],["Defender","Weapon",15000,"Blade that doubles as a shield."],["Dwarven Thrower","Weapon",11000,"Returning warhammer."]]),
+  magic: mk('lm', [["Staff of the Magi","Staff",13000,"Absorbs spells and casts powerful magic."],["Robe of the Archmagi","Wondrous",14000,"AC 15 and bonus to spell saves."],["Rod of Lordly Might","Rod",12000,"Multi-form weapon rod."],["Ioun Stone of Mastery","Wondrous",15000,"Permanent proficiency bonus increase."]]),
+  blackmarket: mk('lb', [["Cloak of Invisibility","Wondrous",10000,"Become invisible on command."],["Sword of Sharpness","Weapon",12000,"Maims on a natural 20."],["Ring of Shooting Stars","Ring",9000,"Light and lightning spheres."],["Daern's Instant Fortress","Wondrous",7500,"Cube that grows into a tower."]]),
+  jeweler: mk('lj', [["Ring of Three Wishes","Ring",30000,"Cast wish up to three times."],["Amulet of the Planes","Wondrous",11000,"Plane shift with an Intelligence check."],["Necklace of Prayer Beads","Wondrous",7000,"Beads of divine spells."],["Ring of Regeneration","Ring",9500,"Regain HP and regrow limbs."]]),
+  cartography: mk('lc', [["Map of the Lost Realms","Wondrous",6500,"Reveals hidden ruins and vaults."],["Atlas of Planar Travel","Wondrous",10000,"Maps routes between planes."],["Cubic Gate Chart","Wondrous",9000,"Charts portals across the multiverse."],["Orb of Dragonkind Map","Wondrous",8000,"Marks every dragon hoard in the realm."]])
+};
+const SHOP_NAMES = {
+  general: ["The Gilded Satchel","Wanderer's Rest Supplies","Old Pip's Emporium","The Rusty Lantern"],
+  armory: ["The Royal Armory","Anvil & Edge","The Iron Bastion","Steelheart Smithy"],
+  magic: ["The Arcane Emporium","Moonlit Phials","The Whispering Tome","Starfall Curios"],
+  blackmarket: ["The Shadow Alley Curios","The Velvet Knife","Crooked Coin Exchange","Nightfall Wares"],
+  jeweler: ["Gilded Vault & Gems","The Sparkling Crown","Opal & Ember","Crystal Hollow Jewelers"],
+  cartography: ["The Cartographer's Guild","The Gilded Compass","Wayfarer's Charts","The Inked Horizon"]
+};
+const KEEPERS = {
+  general: ["Master Garrick","Old Pip","Marta Brightwater","Bram Tolliver","Hettie Cobb"],
+  armory: ["Blacksmith Thrain","Greta Ironhand","Odo Stonefist","Kelda Forgeborn","Ulric Vane"],
+  magic: ["Archmage Vesper","Lyria Moonwhisper","Zephyr Quill","Orin the Wise","Nyssa Dawnthorn"],
+  blackmarket: ["Shady Silas","Vex","Madame Raven","Fingers Malloy","Whisper"],
+  jeweler: ["Gemmaster Valen","Isolde Fairweather","Corvin Ashgrove","Dame Pearl","Tobias Sterling"],
+  cartography: ["Master Scribe Aldous","Elara Pathfinder","Cormac Redmap","Sibyl Inkwell","Finn Waymarker"]
+};
+const TYPES = { general: "GENERAL ADVENTURING SUPPLIES", armory: "WEAPONS & ARMOR", magic: "ARCANE GOODS & POTIONS", blackmarket: "BLACK MARKET & CURIOS", jeweler: "GEMS, JEWELRY & RELICS", cartography: "MAPS & CHARTS" };
+
+const SHOP_DESCS = {
+  general: ["A cramped store where every shelf sags under coils of rope, lanterns and barrels of dried goods.","Bundles of herbs hang from low beams above neatly stacked packs, bedrolls and crates.","A bright, noisy trading post with a hitching rail out front and a half-unloaded cart by the door.","The smell of tallow and leather fills this tidy shop, its walls hung with tools of every sort."],
+  armory: ["The ring of hammer on anvil rolls from a back forge, and racks of blades gleam under the rafters.","Shields line the walls like scales, and a heavy counter bears the scars of a hundred test strikes.","Mannequins in mail stand guard by the door, and the air tastes of coal smoke and oiled steel.","Polished helms watch from high shelves while a grindstone spins lazily in the corner."],
+  magic: ["Violet candlelight flickers over crowded shelves of glowing phials and dusty, whispering tomes.","Charms chime softly overhead, and a faint scent of sulfur and lavender drifts between the shelves.","Stuffed owls and hanging crystals fill this narrow shop, where a cauldron bubbles unattended in the back.","Floating lanterns drift near the ceiling, and some of the books seem to rustle when you look away."],
+  blackmarket: ["A windowless back room lit by a single guttering lamp, with crates stacked to hide what lies behind.","The door has three locks, and the shopkeeper has clearly used none of them in a long while.","Goods lie under a tarp that gets whisked back only for customers who know the right words.","A cellar stall that smells of damp and pipe smoke, with a lookout whistling near the stairs."],
+  jeweler: ["Glass cases glitter beneath hanging lamps, and a velvet curtain hides a heavy iron door.","Soft music plays in this hushed shop where every gem is laid out on black silk.","Mirrors line the walls so every stone catches the light, and a guard stands politely near the door.","The air is perfumed and the floor swept spotless; even the chairs look expensive."],
+  cartography: ["Maps cover every wall in layers, curling at the corners, and rolled charts bristle from barrels.","A huge table dominates the room, inked with half-finished coastlines and sprinkled with brass compasses.","Dried ink and old parchment scent the air, and a globe in the corner has a few suspicious blank patches.","Brass instruments hang from the ceiling, and a map of the realm is pinned with hundreds of tiny flags."]
+};
+const K_ADJ = ["weathered","cheerful","suspicious","soft-spoken","gruff","sharp-eyed","weary","flamboyant","brisk","dour"];
+const K_RACE = ["human","dwarf","halfling","gnome","half-orc","elf","tiefling","dragonborn","half-elf"];
+const K_LOOK = ["with a braided beard dusted in soot","with ink-stained fingers and crooked spectacles","wrapped in a patched traveling cloak","with a gold tooth that flashes when they smile","with a scar across one eyebrow","who wears far too many rings","with silver-streaked hair tied back","with a bright scarf and a ready smile"];
+const K_QUIRK = ["who hums off-key while counting coin","who never quite meets your eyes","who calls every customer 'friend'","who taps the counter when thinking","who keeps a sleepy cat on the counter","who haggles purely for sport","who glances at the door whenever it opens","who speaks only in a low whisper"];
+function makeKeeperDesc() {
+  const adj = rand(K_ADJ), art = /^[aeiou]/i.test(adj) ? 'An' : 'A';
+  return `${art} ${adj} ${rand(K_RACE)} ${rand(K_LOOK)}, ${rand(K_QUIRK)}.`;
+}
+
+/* ---------- Encounter generator & loot (DM only) ---------- */
+const THRESH = [[25,50,75,100],[50,100,150,200],[75,150,225,400],[125,250,375,500],[250,500,750,1100],[300,600,900,1400],[350,750,1100,1700],[450,900,1400,2100],[550,1100,1600,2400],[600,1200,1900,2800],[800,1600,2400,3600],[1000,2000,3000,4500],[1100,2200,3400,5100],[1250,2500,3800,5700],[1400,2800,4300,6400],[1600,3200,4800,7200],[2000,3900,5900,8800],[2100,4200,6300,9500],[2400,4900,7300,10900],[2800,5700,8500,12700]];
+const CR_XP = {0:10,0.125:25,0.25:50,0.5:100,1:200,2:450,3:700,4:1100,5:1800,6:2300,7:2900,8:3900,9:5000,10:5900,11:7200,12:8400,13:10000,14:11500,15:13000,16:15000,17:18000,18:20000,19:22000,20:25000,21:33000,22:41000,23:50000,24:62000};
+const ENVC = { arctic:'A', coastal:'C', desert:'D', forest:'F', grassland:'G', hill:'H', mountain:'M', swamp:'S', underdark:'U', underwater:'W', urban:'T', jungle:'J', feywild:'Y', hells:'N', abyss:'B', shadowfell:'X' };
+const ENV_LABEL = { arctic:'Arctic', coastal:'Coastal', desert:'Desert', forest:'Forest', grassland:'Grassland', hill:'Hill', jungle:'Jungle', mountain:'Mountain', swamp:'Swamp', underdark:'Underdark', underwater:'Underwater', urban:'Urban', feywild:'Feywild', shadowfell:'Shadowfell', hells:'Nine Hells', abyss:'The Abyss' };
+const MONSTERS = `Lemure,0,N,13,7
+Bandit,0.125,TGHFDC,11,12
+Boggle,0.125,FY,18,14
+Camel,0.125,D,15,9
+Cultist,0.125,TU,9,12
+Flying Snake,0.125,JD,5,14
+Giant Crab,0.125,CW,13,15
+Giant Rat,0.125,TUS,7,12
+Guard,0.125,T,11,16
+Kobold,0.125,UHM,5,12
+Manes,0.125,B,9,9
+Merfolk,0.125,CW,11,11
+Noble,0.125,T,9,15
+Stirge,0.125,SFJ,2,14
+Tribal Warrior,0.125,GHFD,11,12
+Triton,0.125,W,9,11
+Twig Blight,0.125,FJ,4,13
+Aarakocra,0.25,MJ,13,12
+Acolyte,0.25,T,9,10
+Axe Beak,0.25,GH,19,11
+Blink Dog,0.25,FGY,22,13
+Constrictor Snake,0.25,SJ,13,12
+Dretch,0.25,B,18,11
+Giant Centipede,0.25,FJU,4,13
+Giant Frog,0.25,SCJ,18,11
+Giant Lizard,0.25,SJU,19,12
+Giant Owl,0.25,FY,19,12
+Giant Poisonous Snake,0.25,SJ,11,14
+Giant Wolf Spider,0.25,FDU,11,13
+Goblin,0.25,FHGMU,7,15
+Grung,0.25,JS,11,12
+Needle Blight,0.25,FJ,11,12
+Panther,0.25,FJ,13,12
+Pixie,0.25,FY,1,15
+Pteranodon,0.25,CMJ,13,13
+Skeleton,0.25,UTDX,13,13
+Sprite,0.25,FY,2,15
+Velociraptor,0.25,FJ,10,13
+Wolf,0.25,FAGHM,11,13
+Zombie,0.25,UTSJX,22,8
+Black Bear,0.5,FMA,19,11
+Cockatrice,0.5,GH,27,11
+Crocodile,0.5,SCJ,19,12
+Dust Mephit,0.5,D,17,12
+Giant Sea Horse,0.5,W,16,13
+Giant Wasp,0.5,FJ,13,12
+Gnoll,0.5,DG,22,15
+Hobgoblin,0.5,GH,11,18
+Ice Mephit,0.5,A,21,11
+Lizardfolk,0.5,SCJ,22,15
+Locathah,0.5,W,13,13
+Orc,0.5,HMFGU,15,13
+Reef Shark,0.5,WC,22,12
+Rust Monster,0.5,U,27,14
+Sahuagin,0.5,WC,22,12
+Satyr,0.5,FY,31,14
+Scout,0.5,FGHM,16,13
+Shadow,0.5,UTX,16,12
+Thug,0.5,T,32,11
+Vine Blight,0.5,FJ,26,12
+Warhorse Skeleton,0.5,UX,22,13
+Animated Armor,1,TU,33,18
+Brown Bear,1,FAM,34,11
+Bugbear,1,FHU,27,16
+Death Dog,1,DU,39,12
+Deinonychus,1,FJ,26,13
+Dire Wolf,1,FA,37,14
+Dryad,1,FY,22,11
+Ghoul,1,UTJX,22,12
+Giant Eagle,1,MH,26,13
+Giant Hyena,1,GD,45,12
+Giant Octopus,1,CW,52,11
+Giant Spider,1,FUJ,26,14
+Giant Toad,1,SCJ,39,11
+Giant Vulture,1,GD,22,10
+Goblin Boss,1,FHMU,21,17
+Harpy,1,CM,38,11
+Hippogriff,1,GHC,19,11
+Imp,1,UTN,10,13
+Jackalwere,1,DT,18,12
+Lion,1,GD,26,12
+Quasit,1,B,7,13
+Quickling,1,FY,10,16
+Scarecrow,1,FGTX,36,11
+Specter,1,TUX,22,12
+Spy,1,T,27,12
+Swarm of Quippers,1,W,28,13
+Thri-kreen,1,DG,33,15
+Tiger,1,FGJ,37,12
+Yuan-ti Pureblood,1,JS,40,11
+Allosaurus,2,FJ,51,13
+Ankheg,2,GF,39,14
+Bandit Captain,2,TGH,65,15
+Berserker,2,HMGT,67,13
+Centaur,2,FG,45,12
+Cult Fanatic,2,TU,33,13
+Druid,2,FGH,27,11
+Gargoyle,2,MTU,52,15
+Gelatinous Cube,2,U,84,6
+Ghast,2,UJX,36,13
+Giant Boar,2,FG,42,12
+Giant Constrictor Snake,2,SJ,60,12
+Giant Elk,2,FGYA,42,14
+Gnoll Pack Lord,2,DG,49,15
+Grick,2,U,27,14
+Griffon,2,MHC,59,12
+Hunter Shark,2,W,45,12
+Merrow,2,WCS,45,13
+Mimic,2,UT,58,12
+Minotaur Skeleton,2,UX,67,12
+Ogre,2,HMFG,59,11
+Ogre Zombie,2,UX,85,8
+Pegasus,2,G,59,12
+Plesiosaurus,2,WC,68,13
+Polar Bear,2,A,42,12
+Priest,2,T,27,13
+Rhinoceros,2,G,45,11
+Saber-Toothed Tiger,2,A,52,12
+Sahuagin Priestess,2,W,33,12
+Sea Hag,2,SCW,52,14
+Spined Devil,2,N,22,13
+Wererat,2,TU,60,12
+Wereraven,2,FTX,31,12
+Will-o'-Wisp,2,SX,22,19
+Basilisk,3,DUM,52,15
+Bearded Devil,3,N,52,13
+Displacer Beast,3,FY,85,13
+Doppelganger,3,T,52,14
+Giant Scorpion,3,D,52,15
+Green Hag,3,SFY,82,17
+Hell Hound,3,N,45,15
+Killer Whale,3,ACW,90,12
+Knight,3,TG,52,18
+Manticore,3,HMD,68,14
+Mummy,3,DT,58,11
+Nightmare,3,NX,68,13
+Owlbear,3,FHY,59,13
+Redcap,3,FY,45,13
+Veteran,3,TG,58,17
+Water Weird,3,W,58,13
+Werewolf,3,FT,58,11
+Wight,3,UTJX,45,14
+Winter Wolf,3,A,75,13
+Yeti,3,A,51,12
+Yuan-ti Malison,3,JS,66,12
+Banshee,4,TUX,58,12
+Black Pudding,4,U,85,7
+Elephant,4,GD,76,12
+Ettin,4,HM,85,12
+Flameskull,4,UX,40,13
+Ghost,4,TUX,45,11
+Gnoll Fang of Yeenoghu,4,G,65,14
+Lamia,4,D,97,13
+Shadow Demon,4,BX,66,13
+Succubus/Incubus,4,N,66,15
+Wereboar,4,FG,78,10
+Weretiger,4,FG,120,12
+Air Elemental,5,MC,90,15
+Barbed Devil,5,N,110,15
+Barlgura,5,B,68,15
+Bulette,5,GHDM,94,17
+Cambion,5,N,82,19
+Earth Elemental,5,MU,126,17
+Fire Elemental,5,D,102,13
+Giant Crocodile,5,SCJ,85,14
+Giant Shark,5,W,126,13
+Gladiator,5,T,112,16
+Hill Giant,5,HM,105,13
+Night Hag,5,SU,112,17
+Revenant,5,FSTX,136,13
+Sahuagin Baron,5,W,76,16
+Salamander,5,D,90,15
+Shambling Mound,5,SFJ,136,15
+Triceratops,5,GJ,95,13
+Troll,5,FHMSUA,84,15
+Unicorn,5,FY,67,12
+Vampire Spawn,5,TUX,82,15
+Water Elemental,5,WC,114,14
+Werebear,5,FM,135,10
+Wraith,5,UTX,67,13
+Chasme,6,B,84,15
+Chimera,6,MH,114,14
+Mage,6,T,40,12
+Mammoth,6,AG,126,13
+Medusa,6,DU,127,15
+Vrock,6,B,104,15
+Wyvern,6,MH,110,13
+Young Brass Dragon,6,D,110,17
+Young White Dragon,6,A,133,17
+Giant Ape,7,FJ,157,12
+Mind Flayer,7,U,71,15
+Oni,7,FTM,110,16
+Stone Giant,7,MH,126,17
+Young Black Dragon,7,S,127,18
+Young Copper Dragon,7,HM,119,17
+Yuan-ti Abomination,7,JS,127,15
+Assassin,8,T,78,15
+Chain Devil,8,N,85,16
+Cloaker,8,U,78,14
+Frost Giant,8,AM,138,15
+Hezrou,8,B,136,16
+Hydra,8,SCWJ,172,15
+Tyrannosaurus Rex,8,GFSJ,136,13
+Young Bronze Dragon,8,CW,142,18
+Young Green Dragon,8,FJ,136,18
+Abominable Yeti,9,A,137,15
+Bone Devil,9,N,142,19
+Clay Golem,9,TU,133,14
+Cloud Giant,9,MC,200,14
+Fire Giant,9,MHD,162,18
+Glabrezu,9,B,157,17
+Treant,9,FYJ,138,16
+Young Blue Dragon,9,DC,152,18
+Young Silver Dragon,9,MA,168,18
+Aboleth,10,UW,135,17
+Stone Golem,10,TUM,178,17
+Yochlol,10,B,136,15
+Young Red Dragon,10,MD,178,18
+Behir,11,MHU,168,17
+Djinni,11,DMC,161,17
+Efreeti,11,DU,200,17
+Gynosphinx,11,DM,136,17
+Horned Devil,11,N,178,18
+Marid,11,WC,229,17
+Remorhaz,11,A,195,17
+Roc,11,MC,248,15
+Archmage,12,T,99,12
+Erinyes,12,N,153,18
+Warlord,12,TGH,229,18
+Adult Brass Dragon,13,D,172,18
+Adult White Dragon,13,A,200,18
+Beholder,13,U,180,18
+Nalfeshnee,13,B,184,18
+Rakshasa,13,T,110,16
+Storm Giant,13,MCW,230,16
+Vampire,13,TUX,144,16
+Adult Black Dragon,14,S,195,19
+Adult Copper Dragon,14,HM,184,18
+Ice Devil,14,N,180,18
+Adult Bronze Dragon,15,CW,212,19
+Adult Green Dragon,15,FJY,207,19
+Mummy Lord,15,DT,97,17
+Purple Worm,15,UD,247,18
+Adult Blue Dragon,16,DC,225,19
+Adult Silver Dragon,16,MA,243,19
+Iron Golem,16,TU,210,20
+Marilith,16,B,189,18
+Adult Red Dragon,17,MDH,256,19
+Androsphinx,17,D,199,17
+Death Knight,17,TUX,180,20
+Dragon Turtle,17,WC,341,20
+Goristro,17,B,310,19
+Balor,19,B,262,19
+Ancient Brass Dragon,20,D,297,20
+Ancient White Dragon,20,A,333,20
+Pit Fiend,20,N,300,19
+Ancient Black Dragon,21,S,367,22
+Ancient Copper Dragon,21,HM,350,21
+Lich,21,TUX,135,17
+Ancient Bronze Dragon,22,CW,444,22
+Ancient Green Dragon,22,FJY,385,21
+Ancient Blue Dragon,23,DC,481,22
+Kraken,23,WC,472,18
+Ancient Red Dragon,24,MD,546,22
+Archdruid,12,FGHS,132,16
+Cyclops,6,HMG,138,14
+Fomorian,8,YU,149,14
+Annis Hag,6,YFM,135,17
+Ancient Silver Dragon,23,AM,487,22
+Swarm of Ravens,0.25,FTH,24,12
+Swarm of Bats,0.25,UFT,22,12
+Swarm of Rats,0.25,TUS,24,10`.split('\n').map(r => { const [name, cr, env, hp, ac] = r.split(','); return { name, cr: +cr, env, hp: +hp, ac: +ac, xp: CR_XP[+cr] }; });
+const fmtCR = c => c === 0.125 ? '1/8' : c === 0.25 ? '1/4' : c === 0.5 ? '1/2' : String(c);
+const MULTS = [1, 1.5, 2, 2.5, 3, 4];
+function adjXP(g, size) {
+  const count = g.reduce((a, x) => a + x.n, 0), raw = g.reduce((a, x) => a + x.m.xp * x.n, 0);
+  let i = count === 1 ? 0 : count === 2 ? 1 : count <= 6 ? 2 : count <= 10 ? 3 : count <= 14 ? 4 : 5;
+  if (size < 3) i++; else if (size >= 6) i--;
+  return raw * MULTS[Math.max(0, Math.min(5, i))];
+}
+let enc = null;
+const ROAD = new Set(['Bandit','Bandit Captain','Thug','Guard','Scout','Veteran','Knight','Cultist','Cult Fanatic','Acolyte','Priest','Mage','Assassin','Spy','Berserker','Tribal Warrior','Druid','Gladiator','Warlord','Archmage','Gnoll','Gnoll Pack Lord','Goblin','Goblin Boss','Hobgoblin','Bugbear','Orc','Kobold','Ogre','Wolf','Dire Wolf','Zombie','Skeleton','Ghoul','Ghast','Wight','Specter','Ghost','Shadow','Wraith','Banshee','Vampire Spawn','Vampire','Werewolf','Wereraven','Wererat','Weretiger','Werebear','Wereboar','Scarecrow','Revenant','Death Knight','Doppelganger','Oni','Yuan-ti Pureblood','Lizardfolk','Harpy','Ettin','Mummy','Jackalwere','Centaur','Warhorse Skeleton']);
+const NOCT = new Set(['Shadow','Specter','Ghost','Banshee','Wraith','Wight','Vampire','Vampire Spawn','Ghoul','Ghast','Zombie','Skeleton','Minotaur Skeleton','Ogre Zombie','Warhorse Skeleton','Werewolf','Wereraven','Wererat','Weretiger','Werebear','Wereboar','Scarecrow','Revenant','Death Knight','Lich','Night Hag','Mind Flayer','Will-o\'-Wisp','Flameskull','Nightmare','Shadow Demon','Stirge','Giant Spider','Panther','Giant Rat','Wolf','Dire Wolf','Giant Wolf Spider','Winter Wolf','Doppelganger','Cloaker','Displacer Beast','Quickling','Redcap']);
+const wpick = (arr, w) => { const ws = arr.map(w), t = ws.reduce((a, b) => a + b, 0); let r = Math.random() * t; for (let i = 0; i < arr.length; i++) { r -= ws[i]; if (r <= 0) return arr[i]; } return arr[arr.length - 1]; };
+
+const TWISTS = {
+  generic: [
+    'A wounded traveler begs for help and is hiding something. (Insight DC 13 to notice)',
+    'A sudden storm forces everyone to find shelter fast. (Survival DC 12)',
+    'An abandoned camp, still warm, left in a hurry. (Investigation DC 12)',
+    'A lost child or pet wanders into the party. (Persuasion DC 10 to calm it)',
+    'A rival adventuring party heads the same way and wants to talk. (Persuasion DC 13)',
+    'A signpost has been tampered with, sending travelers the wrong way. (Survival DC 13)',
+    'A merchant caravan with a broken wheel offers coin or goods for help. (Athletics DC 12)',
+    'A messenger collapses nearby clutching a sealed letter. (Medicine DC 12 to save them)',
+    'A strange glowing marker hums softly when touched. (Arcana DC 14)',
+    'A small stash of supplies is hidden under stones. (Perception DC 14)'
+  ],
+  road: [
+    'A toll gate with no collector, just a crowd of angry travelers. (Persuasion DC 12)',
+    'A wrecked wagon blocks the road, horses missing. (Investigation DC 12)',
+    'A patrol asks to inspect the party’s packs. (Deception DC 13 if anything is hidden)',
+    'Fresh wheel ruts leave the road toward a lonely farm. (Survival DC 12)'
+  ],
+  night: [
+    'The moon goes dark behind sudden clouds and torches gutter. (Survival DC 12 to keep a light)',
+    'A distant bell tolls where no bell should be. (Perception DC 13)',
+    'A child’s voice calls from just beyond the lantern light. (Insight DC 13)'
+  ],
+  arctic: ['A whiteout hides the trail. (Survival DC 13 or lose an hour)', 'A body frozen in the ice, carrying a sealed tube. (Investigation DC 12)', 'Thin ice over a hidden crevasse. (Perception DC 13 to spot; Dex save DC 12)'],
+  coastal: ['A beached longboat, crew missing, cargo untouched. (Investigation DC 12)', 'A rising tide cuts off the cliff path. (Athletics DC 12 to outpace it)', 'Fishers argue over a strange glowing net haul. (Persuasion DC 11)'],
+  desert: ['A mirage shows an oasis. Is it real? (Survival DC 14 to tell)', 'A buried statue head, half swallowed by dunes. (History DC 13)', 'A sandstorm rolls in. (Survival DC 13 to protect supplies)'],
+  forest: ['A fallen giant tree blocks the trail, and something nests in the roots. (Nature DC 12)', 'Old carved trail markers lead in a circle. (Survival DC 13)', 'A hunter caught in a snare begs for help, but the trap was meant for travelers. (Insight DC 14)'],
+  grassland: ['A grass fire races toward the party. (Survival DC 13 to find a firebreak)', 'A lone standing stone hums at dusk. (Arcana DC 13)', 'A migrating herd blocks the way for hours. (Animal Handling DC 12 to guide a path)'],
+  hill: ['A barrow mound with a door that was recently opened. (Investigation DC 13)', 'Shepherds report missing sheep and a strange shape on the ridge. (Persuasion DC 11)', 'A rockslide blocks the valley path. (Athletics DC 13)'],
+  jungle: ['The trail ends at a vine-choked ravine and a rotted rope bridge. (Athletics DC 13)', 'A carved totem warns travelers to turn back. (Religion or History DC 13)', 'Overgrown stone steps lead down to a flooded chamber. (Investigation DC 14)'],
+  mountain: ['An avalanche scar and a pack half-buried in snow. (Perception DC 13)', 'A narrow ledge, strong wind, and a howling shape above. (Acrobatics DC 13)', 'A hermit sells directions in exchange for a favor. (Persuasion DC 12)'],
+  swamp: ['Wisps of light lead off the path, and the path itself is sinking. (Survival DC 13)', 'A fisher’s hut stands empty with a meal still warm. (Investigation DC 12)', 'Rotting boats are chained together in the reeds. (Perception DC 14 to notice what is beneath the planks)'],
+  underdark: ['Glowing fungus lights a cave of crystal. (Nature DC 13 to tell safe from toxic)', 'An abandoned scout post holds a half-finished letter. (Investigation DC 13)', 'A cave-in splits the group. (Athletics DC 13)'],
+  underwater: ['A sunken wreck with a lantern still burning. (Perception DC 13)', 'A strong current sweeps the party toward a reef. (Athletics DC 13)', 'A merfolk patrol demands the party state their business. (Persuasion DC 13)'],
+  urban: ['A pickpocket works the crowd, then a guard appears. (Perception DC 13)', 'A street preacher denounces the party by name. (Insight DC 14)', 'A building is on fire with people trapped inside. (Athletics DC 13)'],
+  feywild: ['A fey asks a riddle and blocks the way until it is answered. (Intelligence DC 14)', 'Time slips: a short rest feels like a day. (Wisdom save DC 13 to keep track)', 'A feast table appears and the host insists everyone eat. (Insight DC 14)'],
+  shadowfell: ['A grey fog drains color and sound, and despair settles in. (Wisdom save DC 13 to shake it off)', 'A shade begs to be buried properly. (Religion DC 12)', 'Echoes of an old battle replay endlessly. (History DC 13)'],
+  hells: ['A bargain table offers a contract for a trivial favor. (Insight DC 14 to read the fine print)', 'A column of chained souls marches past, led by a lemure. (Religion DC 13)', 'A lava flow cuts the road. (Acrobatics DC 14)'],
+  abyss: ['Maddening whispers drift from a cracked portal. (Wisdom save DC 14)', 'A demon cult’s token hangs on a corpse. (Arcana DC 14)', 'The ground quakes and the path rearranges itself. (Survival DC 14)']
+};
+function makeTwists(envKeys, road, night, n) {
+  let pool = [...TWISTS.generic];
+  envKeys.forEach(k => { if (TWISTS[k]) pool.push(...TWISTS[k], ...TWISTS[k]); });
+  if (road) pool.push(...TWISTS.road, ...TWISTS.road);
+  if (night) pool.push(...TWISTS.night, ...TWISTS.night);
+  const out = [];
+  while (out.length < n && pool.length) { const t = rand(pool); out.push(t); pool = pool.filter(x => x !== t); }
+  return out;
+}
+
+function forgeEncounter() {
+  const level = Math.max(1, Math.min(20, parseInt($('enc-level').value) || 1)), size = Math.max(1, Math.min(10, parseInt($('enc-size').value) || 4));
+  const diff = $('enc-diff').value, env = $('enc-env').value;
+  const env2 = env === 'any' ? 'none' : $('enc-env2').value, road = $('enc-road').value === 'road', time = $('enc-time').value, type = $('enc-type').value;
+  const envKeys = [env, env2].filter(k => k && k !== 'any' && k !== 'none' && ENVC[k]);
+  const night = time === 'night';
+  if (type === 'scene') {
+    const list = makeTwists(envKeys, road, night, 2);
+    $('enc-scene').innerHTML = `<div class="bg-navy-950 border border-purple-500/40 rounded-xl p-4 text-xs space-y-2"><div class="font-bold text-purple-300"><i class="fa-solid fa-masks-theater mr-1"></i>Non-Combat Scene</div><div class="text-[11px] text-slate-400">${envKeys.length ? envKeys.map(k => ENV_LABEL[k]).join(' + ') : 'Any terrain'}${road ? ' · On the road' : ''}${time !== 'any' ? ' · ' + (night ? 'Night' : 'Day') : ''}</div>${list.map(t => `<div class="border-t border-navy-900 pt-2 text-slate-200">${t}</div>`).join('')}<div class="text-[10px] text-slate-500">No XP or loot. Use as a story beat, or roll Forge again for another.</div></div>`;
+    return;
+  }
+  const budget = THRESH[level - 1][['easy', 'medium', 'hard', 'deadly'].indexOf(diff)] * size;
+  const letters = envKeys.map(k => ENVC[k]);
+  const pool = MONSTERS.filter(m => m.xp <= budget && (!letters.length || letters.some(L => m.env.includes(L))));
+  if (!pool.length) return toast('No monsters fit those settings. Try a higher level, easier mix, or another terrain.');
+  const wt = m => (road ? (ROAD.has(m.name) ? 4 : 0.25) : 1) * (time === 'any' ? 1 : (NOCT.has(m.name) ? (night ? 3 : 0.35) : 1));
+  let best = null;
+  for (let t = 0; t < 120; t++) {
+    let g = [], fails = 0;
+    while (fails < 6 && g.reduce((a, x) => a + x.n, 0) < 12) {
+      const m = g.length && Math.random() < 0.6 ? rand(g).m : wpick(pool, wt);
+      const trial = g.map(x => ({ ...x })), ex = trial.find(x => x.m === m);
+      ex ? ex.n++ : trial.push({ m, n: 1 });
+      if (adjXP(trial, size) <= budget * 1.1) g = trial; else fails++;
+    }
+    if (!g.length) continue;
+    const gap = Math.abs(adjXP(g, size) - budget) + (g.length > 3 ? budget * 0.15 : 0);
+    if (!best || gap < best.gap) best = { g, gap };
+  }
+  const g = best.g;
+  const twist = type === 'twist' ? makeTwists(envKeys, road, night, 1)[0] : null;
+  enc = { id: Date.now(), g, level, size, diff, env, env2, road, time, twist, budget, raw: g.reduce((a, x) => a + x.m.xp * x.n, 0), adj: Math.round(adjXP(g, size)), count: g.reduce((a, x) => a + x.n, 0), maxCR: Math.max(...g.map(x => x.m.cr)) };
+  $('enc-scene').innerHTML = '';
+  $('loot-out').innerHTML = ''; lastLoot = null; lootSel = new Set(); sentTo = {}; $('loot-share').classList.add('hidden');
+  renderEnc(); saveEnc(); announceEnc();
+}
+function renderEnc() {
+  const e = enc; if (!e) return;
+  $('fallen-ctl').classList.remove('hidden');
+  $('enc-out').innerHTML = `<div class="grid grid-cols-4 gap-2 text-center text-[11px]">
+    <div class="bg-navy-950 p-2 rounded-xl border border-navy-800"><div class="text-slate-400">Budget</div><div class="font-bold text-gold-400">${e.budget.toLocaleString()}</div></div>
+    <div class="bg-navy-950 p-2 rounded-xl border border-navy-800"><div class="text-slate-400">Raw XP</div><div class="font-bold text-emerald-400">${e.raw.toLocaleString()}</div></div>
+    <div class="bg-navy-950 p-2 rounded-xl border border-navy-800"><div class="text-slate-400">Adjusted</div><div class="font-bold text-blue-400">${e.adj.toLocaleString()}</div></div>
+    <div class="bg-navy-950 p-2 rounded-xl border border-navy-800"><div class="text-slate-400">Monsters</div><div class="font-bold text-purple-400">${e.count}</div></div></div>
+    <div class="text-[11px] text-slate-400 mt-2">${e.diff[0].toUpperCase() + e.diff.slice(1)} for ${e.size} level-${e.level} characters. Highest CR: ${fmtCR(e.maxCR)}.</div>
+    <div class="text-[11px] text-slate-500">${[[e.env, e.env2].filter(k => k && k !== 'any' && k !== 'none').map(k => ENV_LABEL[k] || k).join(' + ') || 'Any terrain', e.road ? 'On the road' : '', e.time && e.time !== 'any' ? (e.time === 'night' ? 'Night' : 'Day') : ''].filter(Boolean).join(' · ')}</div>` +
+    (e.twist ? `<div class="bg-purple-950/30 border border-purple-500/40 rounded-xl p-3 text-xs mt-2"><strong class="text-purple-300"><i class="fa-solid fa-wand-sparkles mr-1"></i>Twist:</strong> ${e.twist}</div>` : '') +
+    e.g.map(x => `<div class="bg-navy-950 border border-navy-800 rounded-xl p-3 text-xs flex justify-between gap-2 mt-2"><div><strong class="text-gold-400">${x.n}× ${x.m.name}</strong><div class="text-[11px] text-slate-400">CR ${fmtCR(x.m.cr)} · AC ${x.m.ac} · avg HP ${x.m.hp} each</div></div><div class="text-right text-slate-300 font-mono whitespace-nowrap">${x.m.xp} XP ea</div></div>`).join('');
+}
+
+const GEMS = { 10: ['Azurite','Banded Agate','Blue Quartz','Eye Agate','Hematite','Lapis Lazuli','Malachite','Moss Agate','Obsidian','Rhodochrosite','Tiger Eye','Turquoise'], 50: ['Bloodstone','Carnelian','Chalcedony','Chrysoprase','Citrine','Jasper','Moonstone','Onyx','Quartz','Sardonyx','Star Rose Quartz','Zircon'], 100: ['Amber','Amethyst','Chrysoberyl','Coral','Garnet','Jade','Jet','Pearl','Spinel','Tourmaline'], 500: ['Alexandrite','Aquamarine','Black Pearl','Blue Spinel','Peridot','Topaz'], 1000: ['Black Opal','Blue Sapphire','Emerald','Fire Opal','Opal','Star Ruby','Star Sapphire','Yellow Sapphire'], 5000: ['Black Sapphire','Diamond','Jacinth','Ruby'] };
+const GEM_TIERS = { 1: [10, 50], 2: [50, 100, 500], 3: [100, 500, 1000], 4: [500, 1000, 5000] };
+const POTIONS = { 1: [['Potion of Healing', 50], ['Potion of Climbing', 50]], 2: [['Potion of Healing', 50], ['Potion of Greater Healing', 150]], 3: [['Potion of Greater Healing', 150], ['Potion of Superior Healing', 450]], 4: [['Potion of Superior Healing', 450], ['Potion of Supreme Healing', 1350]] };
+const TRINKETS = ['a tarnished silver locket', 'a bent brass key', 'a pouch of odd buttons', 'a chipped bone dice set', 'a faded guild token', 'a cracked pocket mirror', 'a stub of scented candle', 'a torn, unreadable map scrap'];
+const RAR_ORDER = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
+const MAGIC = {
+  'common': ['Moon-Touched Sword', 'Potion of Climbing', 'Spell Scroll (1st level)', 'Cloak of Billowing', 'Wand of Pyrotechnics', 'Potion of Healing'],
+  'uncommon': ['+1 {W}', '+1 Shield', 'Bag of Holding', 'Cloak of Protection', 'Boots of Elvenkind', 'Gloves of Thievery', 'Wand of Magic Missiles', 'Rope of Climbing', 'Ring of Mind Shielding', 'Pearl of Power', 'Goggles of Night', 'Potion of Greater Healing', 'Spell Scroll (3rd level)', 'Driftglobe'],
+  'rare': ['+2 {W}', '+1 {A}', 'Ring of Protection', 'Handy Haversack', 'Amulet of Health', 'Cloak of Displacement', 'Flame Tongue', 'Sun Blade', 'Wand of Fireballs', 'Ring of Spell Storing', 'Portable Hole', 'Boots of Speed', 'Bracers of Defense', 'Potion of Superior Healing', 'Spell Scroll (5th level)'],
+  'very rare': ['+3 {W}', '+2 {A}', 'Staff of Power', 'Frost Brand', 'Ring of Regeneration', 'Carpet of Flying', 'Dwarven Thrower', 'Efreeti Bottle', 'Potion of Supreme Healing', 'Spell Scroll (7th level)', 'Cloak of Arachnida', 'Rod of Absorption'],
+  'legendary': ['Holy Avenger', 'Vorpal Sword', 'Defender', '+3 {A}', 'Staff of the Magi', 'Ring of Three Wishes', 'Robe of the Archmagi', 'Cloak of Invisibility', 'Luck Blade', 'Spell Scroll (9th level)']
+};
+const cap = w => w.replace(/\b\w/g, c => c.toUpperCase());
+const weaponList = () => Object.keys(BASE_GEAR).filter(k => !ARMOR_BASES.includes(k) && k !== 'shield' && k !== 'crossbow');
+const armorList = () => ARMOR_BASES.filter(k => k !== 'plate');
+const rarByLevel = L => L <= 4 ? 1 : L <= 10 ? 2 : L <= 16 ? 3 : 4;
+const rarByCR = c => c <= 4 ? 1 : c <= 10 ? 2 : c <= 16 ? 3 : 4;
+
+const monsterLabels = e => e.g.flatMap(x => Array.from({ length: x.n }, (_, i) => x.n > 1 ? `${x.m.name} #${i + 1}` : x.m.name));
+const INDIV_GP = [10, 90, 1100, 9000];
+function genLoot(level, e, roll, dc, nat20, scale = 1) {
+  const tier = e.maxCR <= 4 ? 1 : e.maxCR <= 10 ? 2 : e.maxCR <= 16 ? 3 : 4;
+  const q = nat20 || roll >= dc + 5 ? 'high' : roll >= dc ? 'average' : 'minimal';
+  const mult = { minimal: 0.25, average: 1, high: 2 }[q];
+  const slots = [];
+  e.g.forEach(x => { for (let i = 1; i <= x.n; i++) slots.push({ label: x.n > 1 ? `${x.m.name} #${i}` : x.m.name, cr: x.m.cr, coins: 0, items: [] }); });
+  slots.forEach(sl => {
+    const band = sl.cr <= 4 ? 0 : sl.cr <= 10 ? 1 : sl.cr <= 16 ? 2 : 3;
+    const c = Math.round(INDIV_GP[band] * mult * scale * (0.7 + Math.random() * 0.6));
+    sl.coins = scale > 0 ? Math.max(1, c) : 0;
+  });
+  const give = it => rand(slots).items.push(it);
+  const nGems = q === 'minimal' ? 0 : q === 'average' ? randInt(1, 2) : randInt(2, 4);
+  for (let i = 0; i < nGems; i++) { const v = rand(GEM_TIERS[tier]); give({ kind: 'Gem', name: rand(GEMS[v]), value: v }); }
+  if (q === 'minimal' && Math.random() < 0.6) give({ kind: 'Trinket', name: rand(TRINKETS), value: 0 });
+  if (q === 'high') {
+    for (let i = 0; i < randInt(1, 2); i++) { const [n, v] = rand(POTIONS[tier]); give({ kind: 'Potion', name: n, value: v }); }
+    const gcap = tier === 1 ? 50 : tier === 2 ? 400 : 1500;
+    const gear = [...weaponList(), ...armorList(), 'shield'].filter(n => BASE_GEAR[n] <= gcap);
+    for (let i = 0; i < randInt(1, 2); i++) { const n = rand(gear); give({ kind: 'Gear', name: cap(n), value: BASE_GEAR[n] }); }
+  }
+  let magicInfo = null;
+  if (nat20) {
+    const maxIdx = Math.min(rarByLevel(level), rarByCR(e.maxCR));
+    const weights = [3, 4, 3, 2, 1].slice(0, maxIdx + 1), total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total, ri = 0; while (r >= weights[ri]) { r -= weights[ri]; ri++; }
+    const rar = RAR_ORDER[ri];
+    const name = rand(MAGIC[rar]).replace('{W}', () => cap(rand(weaponList()))).replace('{A}', () => cap(rand(armorList())));
+    const value = /^\+\d|^Potion|^Spell Scroll/.test(name) ? estimateValue(name).value : RARITY[rar];
+    slots.reduce((a, b) => b.cr > a.cr ? b : a).items.push({ kind: 'Magic', name, value, rar });
+    magicInfo = { cap: RAR_ORDER[maxIdx], byLevel: RAR_ORDER[rarByLevel(level)], byCR: RAR_ORDER[rarByCR(e.maxCR)] };
+  }
+  const items = slots.flatMap(s => s.items), gold = slots.reduce((a, s) => a + s.coins, 0);
+  return { q, gold, items, tier, magicInfo, slots, total: gold + items.reduce((a, i) => a + i.value, 0) };
+}
+let lastLoot = null, lootSel = new Set(), sentTo = {};
+function doLoot(nat20) {
+  if (!enc) return toast('Forge an encounter first.');
+  const dc = parseInt($('loot-dc').value) || 10, roll = parseInt($('loot-roll').value);
+  let scale = parseFloat($('loot-scale').value); if (isNaN(scale) || scale < 0) scale = 1;
+  if (!nat20 && isNaN(roll)) return toast("Enter the player's inspection total.");
+  const L = genLoot(enc.level, enc, nat20 ? 20 : roll, dc, nat20, scale);
+  lastLoot = { L, nat20, roll: nat20 ? 20 : roll, dc, scale }; lootSel = new Set(); sentTo = {};
+  renderLoot(); saveEnc();
+}
+function renderLoot() {
+  if (!lastLoot) return;
+  const { L, nat20, roll, dc, scale } = lastLoot;
+  const label = { minimal: 'Minimal haul', average: 'Average haul', high: 'Rich haul' }[L.q];
+  const kindColor = { Gem: 'text-cyan-300', Potion: 'text-rose-300', Gear: 'text-slate-200', Magic: 'text-amber-300', Trinket: 'text-slate-400' };
+  const line = i => `<span class="${kindColor[i.kind]}">${i.kind === 'Magic' ? '✦ ' : ''}${i.name}${i.rar ? ` <span class="text-[10px] text-slate-400">(${i.rar})</span>` : ''}</span>`;
+  $('loot-out').innerHTML = `<div class="bg-navy-950 border ${nat20 ? 'border-amber-400' : 'border-navy-800'} rounded-xl p-4 space-y-2 text-xs">
+    <div class="flex justify-between"><strong class="text-gold-400">${label}${nat20 ? ' (Nat 20)' : ''}</strong><span class="text-slate-400">${nat20 ? '' : `Roll ${roll} vs DC ${dc}`} · gold ×${scale}</span></div>
+    ${L.slots.map((sl, idx) => `<div class="border-t border-navy-900 pt-1"><div class="flex justify-between items-center gap-2"><span class="text-slate-200 font-bold">${sl.label}</span><span class="flex items-center gap-2"><span class="text-gold-400 font-mono">${sl.coins.toLocaleString()} gp</span><button data-act="showMon" data-id="${idx}" class="px-2 py-0.5 bg-teal-700 text-white rounded text-[10px] font-bold">Show to party</button></span></div>${sl.items.map(i => `<div class="flex justify-between gap-2 pl-2"><span>${line(i)}</span><span class="font-mono text-slate-400">${i.value ? i.value.toLocaleString() + ' gp' : 'trinket'}</span></div>`).join('')}</div>`).join('')}
+    ${L.magicInfo ? `<div class="text-[10px] text-slate-400 border-t border-navy-800 pt-2">Magic item rarity cap: <strong>${L.magicInfo.cap}</strong> (party level ${enc.level} allows ${L.magicInfo.byLevel}; CR ${fmtCR(enc.maxCR)} allows ${L.magicInfo.byCR}).</div>` : ''}
+    <div class="border-t border-navy-800 pt-2 flex justify-between"><span>Coins ${L.gold.toLocaleString()} gp · total value</span><strong class="text-emerald-400 font-mono">≈ ${L.total.toLocaleString()} gp</strong></div></div>`;
+  $('loot-share').classList.remove('hidden');
+}
+function saveEnc() { try { localStorage.setItem('rf_enc', JSON.stringify({ enc, lastLoot, sentTo })); } catch (e) {} }
+function restoreEnc() {
+  try { const d = JSON.parse(localStorage.getItem('rf_enc') || 'null'); if (d && d.enc) { enc = d.enc; lastLoot = d.lastLoot || null; lootSel = new Set(); sentTo = d.sentTo || {}; renderEnc(); renderLoot(); } } catch (e) {}
+}
+function announceEnc() {
+  if (fb && isDM) {
+    fb.setDoc(fb.doc(fb.db, 'reveals', '_enc'), { id: enc.id, ts: Date.now() }).catch(() => toast('Could not tell players about the new encounter.'));
+    fb.deleteDoc(fb.doc(fb.db, 'reveals', '_fallen')).catch(() => {});
+  }
+}
+
+const nameKey = n => String(n).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+function sendReveal(mode, to, idx) {
+  if (!lastLoot) { toast('Roll loot first.'); return false; }
+  if (!fb) { toast('Not connected. Nothing was shared.'); return false; }
+  const key = to === 'all' ? '_party' : nameKey(to);
+  if (!key) { toast('That player name is not usable.'); return false; }
+  const L = lastLoot.L, slim = i => ({ kind: i.kind, name: i.name, value: i.value, rar: i.rar || null });
+  let shown = L.slots;
+  const eid = enc ? enc.id : 0;
+  if (mode === 'one') {
+    if (!L.slots[idx]) { toast('No loot rolled for that monster yet. Roll loot first.'); return false; }
+    const prev = sentTo[key] && sentTo[key].encId === eid ? sentTo[key].shown : [];
+    const ids = prev.includes(idx) ? prev : [...prev, idx];
+    sentTo[key] = { encId: eid, shown: ids }; saveEnc();
+    shown = ids.map(i => L.slots[i]).filter(Boolean);
+  }
+  if (mode === 'total') { sentTo[key] = { encId: eid, shown: [] }; saveEnc(); }
+  if (mode === 'selected') { shown = L.slots.filter((_, i) => lootSel.has(i)); if (!shown.length) { toast('Tick at least one monster first.'); return false; } }
+  const sub = mode === 'selected' || mode === 'one' ? shown.reduce((a, s) => a + s.coins + s.items.reduce((x, i) => x + i.value, 0), 0) : L.total;
+  const body = mode === 'total' ? { mode, coins: L.gold, items: L.items.map(slim) } : { mode: 'monster', monsters: shown.map(s => ({ label: s.label, coins: s.coins, items: s.items.map(slim) })) };
+  fb.setDoc(fb.doc(fb.db, 'reveals', key), { ...body, encId: enc ? enc.id : 0, total: sub, to: to === 'all' ? 'all' : String(to).slice(0, 30), ts: Date.now() })
+    .then(() => toast(`Loot shown to ${to === 'all' ? 'everyone' : to}.`)).catch(() => toast('Could not share loot. Check the Firestore rules.'));
+  return true;
+}
+let rev = { me: null, all: null, enc: null, fallen: null }, revUnsubs = [], revKey = '', askedLoot = new Set();
+let seenRev = (() => { try { return JSON.parse(localStorage.getItem('rf_rev_seen') || '{}'); } catch (e) { return {}; } })();
+function watchReveals() {
+  revUnsubs.forEach(u => u()); revUnsubs = []; rev = { ...rev, me: null }; revKey = nameKey($('pl-name').value); renderReveal();
+  if (!fb || isDM) return;
+  const listen = (id, slot) => { let first = true; revUnsubs.push(fb.onSnapshot(fb.doc(fb.db, 'reveals', id), snap => {
+    rev[slot] = snap.exists() ? snap.data() : null;
+    if (!first && rev[slot] && slot !== 'enc') toast(slot === 'fallen' ? 'Defeated monsters are ready to loot!' : 'The DM revealed some loot!');
+    first = false; renderReveal();
+  }, () => {})); };
+  listen('_enc', 'enc');
+  listen('_fallen', 'fallen');
+  listen('_party', 'all');
+  if (revKey) listen(revKey, 'me');
+}
+function revBlock(r, title) {
+  const itm = i => `<div class="flex justify-between gap-2"><span class="${i.kind === 'Magic' ? 'text-amber-300' : ''}">${i.kind === 'Magic' ? '✦ ' : ''}${esc(i.name)}${i.rar ? ` <span class="text-[10px] text-slate-400">(${esc(i.rar)})</span>` : ''}</span><span class="font-mono text-slate-400">${i.value ? Number(i.value).toLocaleString() + ' gp' : ''}</span></div>`;
+  const body = r.mode === 'total'
+    ? `<div>Coins: <strong class="text-gold-400 font-mono">${Number(r.coins).toLocaleString()} gp</strong></div>${(r.items || []).map(itm).join('')}`
+    : (r.monsters || []).map(m => `<div class="border-t border-navy-900 pt-1"><div class="flex justify-between"><span class="text-slate-200 font-bold">${esc(m.label)}</span><span class="text-gold-400 font-mono">${Number(m.coins).toLocaleString()} gp</span></div>${(m.items || []).map(itm).join('')}</div>`).join('');
+  return `<div class="space-y-1 text-xs"><div class="font-bold text-emerald-300">${title}</div>${body}<div class="border-t border-navy-800 pt-1 flex justify-between"><span>Total value</span><strong class="text-emerald-400 font-mono">≈ ${Number(r.total).toLocaleString()} gp</strong></div></div>`;
+}
+const revVisible = (r, slot) => !!r && (!rev.enc || r.encId === rev.enc.id) && Number(r.ts) > (seenRev[slot] || 0);
+function renderFallen() {
+  const box = $('fallen-box'), f = rev.fallen, ok = !isDM && f && (!rev.enc || f.encId === rev.enc.id);
+  box.classList.toggle('hidden', !ok);
+  $('btn-fallen').classList.toggle('hidden', !ok);
+  if (!ok) { box.innerHTML = ''; $('fallen-modal').classList.add('hidden'); return; }
+  const left = (f.monsters || []).filter(m => !askedLoot.has(f.encId + ':' + m.idx)).length;
+  $('btn-fallen-txt').textContent = `Defeated Monsters (${(f.monsters || []).length})` + (left ? ' · Loot' : '');
+  const keep = $('pl-loot-roll') ? $('pl-loot-roll').value : '';
+  box.innerHTML = `<p class="text-[11px] text-slate-400">Search a fallen monster for loot. Add your inspection roll if the DM asked for one. The DM decides what you find.</p>
+    <input id="pl-loot-roll" type="number" min="1" max="40" placeholder="Inspection roll (optional)" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-gold-400 text-center font-bold">
+    ${(f.monsters || []).map(m => { const asked = askedLoot.has(f.encId + ':' + m.idx); return `<div class="flex items-center justify-between gap-2 bg-navy-950 border border-navy-800 rounded-xl px-3 py-2 text-xs"><span class="font-bold text-slate-200">${esc(m.label)}</span><button data-act="lootMon" data-id="${Number(m.idx)}" ${asked ? 'disabled' : ''} class="px-3 py-1 rounded font-bold ${asked ? 'opacity-60 bg-slate-800 text-slate-400' : 'bg-emerald-600 text-white'}">${asked ? 'Asked' : 'Loot'}</button></div>`; }).join('')}`;
+  if (keep && $('pl-loot-roll')) $('pl-loot-roll').value = keep;
+}
+function updateEncDot() {
+  const has = !isDM && (!$('btn-fallen').classList.contains('hidden') || !$('loot-reveal').classList.contains('hidden'));
+  $('penc-empty').classList.toggle('hidden', has);
+  $('enc-dot').classList.toggle('hidden', !(has && curPage !== 'enc'));
+}
+function renderReveal() {
+  renderFallen();
+  const box = $('loot-reveal'), list = [];
+  if (!isDM && revVisible(rev.me, 'me')) list.push(revBlock(rev.me, 'Loot shown to you'));
+  if (!isDM && revVisible(rev.all, 'all')) list.push(revBlock(rev.all, 'Loot shared with the party'));
+  box.classList.toggle('hidden', !list.length);
+  box.innerHTML = list.length ? '<h3 class="font-cinzel font-bold text-lg text-emerald-300"><i class="fa-solid fa-sack-dollar mr-2"></i>Loot Found</h3>' + list.join('') + '<button data-act="ackLoot" class="w-full py-2 bg-emerald-700 text-white font-bold rounded-xl text-xs">Got it, close</button>' : '';
+  updateEncDot();
+}
+const lootReqCard = r => `<div class="bg-navy-950 border border-emerald-700 rounded-xl p-3 text-xs space-y-2"><div><strong class="text-gold-400">${esc(r.player)}</strong> wants to loot <strong class="text-slate-100">${esc(r.item || 'a monster')}</strong>${r.roll ? ` · inspection <span class="text-gold-400 font-mono">${Number(r.roll)}</span>` : ''}</div>
+  ${r.roll ? `<button data-act="useRoll" data-id="${r.id}" class="w-full py-1.5 bg-purple-600 text-white font-bold rounded-lg">Roll loot with their ${Number(r.roll)}</button>` : ''}
+  <div class="grid grid-cols-2 gap-1.5">
+    <button data-act="lootTo" data-id="${r.id}" class="py-1.5 bg-emerald-700 text-white font-bold rounded-lg">Show to ${esc(r.player)}</button>
+    <button data-act="lootAll" data-id="${r.id}" class="py-1.5 bg-teal-700 text-white font-bold rounded-lg">Show to everyone</button></div>
+  <button data-act="decline" data-id="${r.id}" class="w-full py-1.5 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg">Dismiss</button></div>`;
+
+function fillShop(x) {
+  if (!x.cat) x.cat = Object.keys(TYPES).find(k => TYPES[k] === x.type) || 'general';
+  if (!x.shopDesc) x.shopDesc = rand(SHOP_DESCS[x.cat] || SHOP_DESCS.general);
+  if (!x.keeperDesc) x.keeperDesc = makeKeeperDesc();
+  if (x.closed === undefined) x.closed = false;
+  return x;
+}
+
+/* ---------- state ---------- */
+let shop = null;
+let isDM = false;
+let haggle = null;
+let fb = null, unsub = null;
+let requests = [], reqUnsub = null, reqFirst = true, lastReq = 0;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function visibleVault(s) {
+  const v = s.vaultItems || [];
+  if (s.vaultState === 'low') return v.slice(0, 1);
+  if (s.vaultState === 'partial') return v.slice(0, Math.ceil(v.length / 2));
+  if (s.vaultState === 'locked' || !s.vaultState) return [];
+  return v;
+}
+
+function newShop(cat, quality) {
+  let pool = [...ITEM_POOLS[cat]], range = [11, 15];
+  if (quality === 'poor') { pool = pool.filter(i => i.baseCost <= 49); range = [5, 7]; }
+  else if (quality === 'average') { pool = pool.filter(i => i.baseCost <= 149); range = [7, 10]; }
+  return {
+    cat, name: rand(SHOP_NAMES[cat]), type: TYPES[cat], keeper: rand(KEEPERS[cat]), merchantGold: randInt(500, 2500),
+    shopDesc: rand(SHOP_DESCS[cat]), keeperDesc: makeKeeperDesc(), closed: false,
+    vaultState: 'locked', persuasionRoll: 0,
+    items: shuffle(pool).slice(0, Math.min(pool.length, randInt(...range))).map(i => ({ ...i, stock: randInt(1, 3), cost: i.baseCost })),
+    vaultItems: shuffle(VAULT_POOLS[cat]).slice(0, randInt(2, 3)).map(v => ({ ...v, stock: 1, cost: v.baseCost }))
+  };
+}
+
+/* ---------- sync ---------- */
+function commit() {
+  render();
+  if (!(fb && isDM)) return;
+  const { vaultItems, ...pub } = shop;
+  Promise.all([
+    fb.setDoc(fb.pubRef, { ...pub, vault: visibleVault(shop), updated: Date.now() }),
+    fb.setDoc(fb.secRef, { vaultItems })
+  ]).catch(e => { console.error(e); toast("Sync failed — check your connection or rules."); });
+}
+
+function setStatus(txt, color) { $('live-txt').textContent = txt; $('live-dot').className = 'inline-block w-2 h-2 rounded-full mr-1 ' + color; }
+
+function subscribePlayers() {
+  if (!fb) return;
+  unsub?.(); watchReveals();
+  unsub = fb.onSnapshot(fb.pubRef, snap => {
+    shop = snap.exists() ? snap.data() : null;
+    setStatus(shop ? 'Live' : 'Waiting for DM', shop ? 'bg-emerald-400' : 'bg-amber-400');
+    render();
+  }, () => setStatus('Connection error', 'bg-rose-500'));
+}
+
+/* ---------- render ---------- */
+const card = (i, vault) => {
+  const buy = isDM ? `<button data-act="buy" data-id="${i.id}" data-v="${vault ? 1 : ''}" ${i.stock <= 0 ? 'disabled' : ''} class="px-3 py-1 rounded font-bold ${i.stock <= 0 ? 'opacity-50 bg-slate-800 text-slate-400' : vault ? 'bg-purple-600 text-white' : 'bg-gold-500 text-navy-950'}">${i.stock > 0 ? 'Sell to Party' : 'Sold Out'}</button>` : (i.stock <= 0 ? '<span class="text-rose-400 font-bold">Sold Out</span>' : `<button data-act="reqBuy" data-id="${i.id}" data-v="${vault ? 1 : ''}" class="px-3 py-1 rounded font-bold ${vault ? 'bg-purple-600 text-white' : 'bg-gold-500 text-navy-950'}">Buy</button>`);
+  const strip = isDM ? requests.filter(r => r.type === 'buy' && r.itemId === i.id && !!r.vault === !!vault).map(r => `<div data-req="${r.id}" class="buy-req mt-1 p-2 bg-rose-950/50 border border-rose-600 rounded-lg text-[11px] flex items-center justify-between gap-2"><span>🔔 <strong class="text-gold-400">${esc(r.player)}</strong> wants to buy this</span><span class="flex gap-1.5 shrink-0"><button data-act="approve" data-id="${r.id}" class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded">Approve</button><button data-act="decline" data-id="${r.id}" class="px-2.5 py-1 bg-rose-950 text-rose-300 border border-rose-800 rounded">Decline</button></span></div>`).join('') : '';
+  return `<div class="bg-navy-950 border ${i.isLegendary ? 'border-amber-400 shadow-lg shadow-amber-500/20' : vault ? 'border-purple-500/40' : 'border-navy-800'} rounded-xl p-3.5 flex flex-col justify-between space-y-2">
+    <div><div class="flex justify-between font-bold text-sm gap-2"><span class="${i.isLegendary ? 'text-amber-300' : ''}">${i.name}</span><span class="text-gold-400 whitespace-nowrap">${i.cost} GP</span></div>
+    <p class="text-xs text-slate-400 mt-1">${i.desc || ''}</p></div>
+    <div class="flex justify-between items-center pt-2 border-t border-navy-900 text-xs"><span class="text-slate-400">Stock: <strong class="text-slate-200">${i.stock}</strong></span>${buy}</div>${strip}</div>`;
+};
+
+function render() {
+  const s = shop;
+  $('shop-name').textContent = s ? s.name : 'Waiting for the DM…';
+  $('shop-type').textContent = s ? s.type : '';
+  $('shop-keeper').textContent = s ? `Proprietor: ${s.keeper}` : '';
+  $('shop-gold').textContent = s ? `Merchant Gold: ${(s.merchantGold || 0).toLocaleString()} GP` : '';
+  $('shop-desc').textContent = s ? (s.shopDesc || '') : '';
+  $('keeper-desc').textContent = s ? (s.keeperDesc || '') : '';
+  $('inv-box').classList.toggle('hidden', !!(s && s.closed && !isDM));
+  const canShop = !!(s && !(s.closed && !isDM));
+  $('btn-inv').classList.toggle('hidden', !canShop);
+  $('btn-inv-txt').textContent = canShop ? `Browse Inventory (${s.items.length}${(isDM ? visibleVault(s) : (s.vault || [])).length && s.vaultState !== 'locked' ? ' + vault' : ''})` : 'Inventory';
+  if (!canShop) $('inv-modal').classList.add('hidden');
+  $('closed-box').classList.toggle('hidden', !(s && s.closed));
+  if (s && s.closed) $('closed-msg').textContent = `${s.keeper || 'The keeper'} was offended and has shut up shop. Perhaps they will reopen once tempers cool.`;
+  $('inv').innerHTML = !s ? '' : (s.items.length ? s.items.map(i => card(i, false)).join('') : '<div class="text-xs text-slate-500 italic">No inventory.</div>');
+
+  const vault = s ? (isDM ? visibleVault(s) : (s.vault || [])) : [];
+  $('vault-box').classList.toggle('hidden', !s || s.vaultState === 'locked' || !vault.length || !!(s.closed && !isDM));
+  if (s && vault.length) {
+    const st = s.vaultState;
+    $('vault-badge').textContent = st === 'nat20' ? 'NATURAL 20!' : st === 'full' ? 'Full Access' : st === 'partial' ? 'Partial Access' : 'Restricted';
+    $('vault-flavor').textContent = `Persuasion ${s.persuasionRoll}: ` + (st === 'low' ? 'a glimpse of the basics.' : st === 'partial' ? 'part of the vault is revealed.' : 'the vault is fully unveiled!');
+    $('vault-grid').innerHTML = vault.map(v => card(v, true)).join('');
+  }
+  ['dm-controls', 'dm-haggle', 'dm-saved'].forEach(id => $(id).classList.toggle('hidden', !isDM));
+  $('pl-name-card').classList.toggle('hidden', isDM);
+  $('pl-haggle').classList.toggle('hidden', isDM || !shop || shop.closed);
+  applyPage();
+  renderReveal();
+  $('btn-reopen').classList.toggle('hidden', !(isDM && shop && shop.closed));
+  renderRequests();
+  const b = $('btn-auth');
+  b.innerHTML = isDM ? '<i class="fa-solid fa-lock-open mr-1"></i>DM · Logout' : '<i class="fa-solid fa-lock mr-1"></i>DM Login';
+  b.className = 'px-3 py-1.5 rounded-xl border text-xs font-bold ' + (isDM ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300' : 'bg-navy-800 border-navy-700 text-gold-400');
+  if (isDM) { renderSaved(); if (haggle) renderHaggle(); }
+}
+
+/* ---------- haggle ---------- */
+function renderHaggle() {
+  const el = $('haggle-res'), h = haggle;
+  if (!h) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const wares = [...shop.items, ...visibleVault(shop)];
+  el.innerHTML = `<div class="flex justify-between gap-2 border-b border-navy-800 pb-2"><span>Item: <strong class="text-gold-400">${h.item}</strong></span><span class="font-mono px-2 py-0.5 rounded ${h.nat1 ? 'bg-rose-950 text-rose-300' : 'bg-emerald-950 text-emerald-300'}">${h.tier}</span></div>
+  <p class="italic text-slate-300">"${h.flavor}"</p>
+  <p class="text-[11px] text-slate-400">Value used: <strong class="text-gold-400">${h.est} GP</strong> (${h.why}). The offer is 50% of that, adjusted by the roll.</p>
+  <div class="grid grid-cols-2 gap-2"><div class="bg-navy-900 p-2 rounded-lg">Agreed Value<br><strong class="text-gold-400 font-mono">${h.price} GP</strong></div><div class="bg-navy-900 p-2 rounded-lg">Remaining Cash<br><strong class="text-emerald-400 font-mono">${h.cash} GP</strong></div></div>
+  ${!h.nat1 && shop.merchantGold < h.cash ? `<div class="p-2 bg-amber-950/50 border border-amber-700 rounded-lg text-amber-300">The shop only has ${shop.merchantGold.toLocaleString()} GP. Include wares to lower the cash owed, or raise the shop's gold above.</div>` : ''}
+  ${h.nat1 ? '<div class="p-2 bg-rose-950/40 border border-rose-800 rounded-lg text-rose-300 text-center">Critical failure! The vault is locked and trade is refused.</div>' : `
+  <div class="grid grid-cols-1 gap-2">${wares.map(t => { const inc = h.inc.some(x => x.id === t.id); const dis = !inc && (t.cost > h.cash || t.stock <= 0);
+    return `<div class="bg-navy-900 border ${inc ? 'border-gold-500' : 'border-navy-700'} rounded-lg p-2 flex justify-between items-center gap-2"><span class="truncate font-bold">${t.name} <span class="text-gold-400 font-mono">${t.cost} GP</span></span>
+    <button data-act="${inc ? 'unInc' : 'inc'}" data-id="${t.id}" ${dis ? 'disabled' : ''} class="px-2 py-0.5 rounded font-bold ${inc ? 'bg-rose-950 text-rose-300' : dis ? 'opacity-40 bg-slate-800 text-slate-500' : 'bg-amber-600 text-navy-950'}">${inc ? 'Remove' : 'Include'}</button></div>`; }).join('')}</div>
+  <button data-act="finalize" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl">Finalize Deal</button>`}`;
+}
+
+const getSaved = () => { try { return JSON.parse(localStorage.getItem('rf_saved') || '[]'); } catch (e) { return []; } };
+const putSaved = a => { try { localStorage.setItem('rf_saved', JSON.stringify(a)); } catch (e) { toast('Could not save on this device.'); } };
+function renderSaved() {
+  const a = getSaved();
+  $('saved').innerHTML = a.length ? a.map(s => `<div class="bg-navy-950 border border-navy-800 p-2.5 rounded-xl flex items-center justify-between text-xs gap-2"><div><div class="font-bold">${s.name}</div><div class="text-[10px] text-slate-400">${s.items.length} items · ${s.savedDate}</div></div>
+    <div class="flex gap-1.5"><button data-act="load" data-id="${s.savedId}" class="px-2.5 py-1 bg-gold-500 text-navy-950 font-bold rounded-lg">Load</button><button data-act="del" data-id="${s.savedId}" class="px-2.5 py-1 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg">Delete</button></div></div>`).join('') : '<div class="text-xs text-slate-500 italic">No saved stores.</div>';
+}
+
+const RARITY = { 'very rare': 20000, uncommon: 400, common: 100, rare: 4000, legendary: 50000, artifact: 100000 };
+const BONUS_RARITY = { 1: 'uncommon', 2: 'rare', 3: 'very rare' };
+const BASE_GEAR = { dagger: 2, handaxe: 5, shortsword: 10, longsword: 15, rapier: 25, scimitar: 25, greatsword: 50, greataxe: 30, battleaxe: 10, warhammer: 15, mace: 5, spear: 1, halberd: 20, glaive: 20, pike: 5, trident: 5, flail: 10, morningstar: 15, javelin: 1, maul: 10, lance: 10, whip: 2, shortbow: 25, longbow: 50, 'hand crossbow': 75, 'light crossbow': 25, 'heavy crossbow': 50, crossbow: 25, sling: 1, 'studded leather': 45, 'padded armor': 5, 'leather armor': 10, 'hide armor': 10, 'chain shirt': 50, 'scale mail': 50, breastplate: 400, 'half plate': 750, 'ring mail': 30, 'chain mail': 75, 'splint armor': 200, 'plate armor': 1500, plate: 1500, shield: 10 };
+const ARMOR_BASES = ['studded leather','padded armor','leather armor','hide armor','chain shirt','scale mail','breastplate','half plate','ring mail','chain mail','splint armor','plate armor','plate'];
+const ARMOR_BONUS_RARITY = { 1: 'rare', 2: 'very rare', 3: 'legendary' };
+const SCROLL_PRICES = [25, 75, 150, 300, 500, 1000, 2000, 4000, 8000, 20000];
+function estimateValue(raw) {
+  const l = raw.toLowerCase();
+  const base = Object.keys(BASE_GEAR).filter(k => l.includes(k)).sort((a, b) => b.length - a.length)[0];
+  const plus = (l.match(/\+\s*([123])/) || [])[1];
+  const word = Object.keys(RARITY).find(k => new RegExp('\\b' + k + '\\b').test(l));
+  if (plus) { const r = (ARMOR_BASES.includes(base) ? ARMOR_BONUS_RARITY : BONUS_RARITY)[plus]; return { value: RARITY[r] + (base ? BASE_GEAR[base] : 0), why: `+${plus} ${base || 'magic item'}, ${r} per DMG` }; }
+  const sc = l.includes('scroll') ? (/cantrip/.test(l) ? 0 : parseInt((l.match(/(\d)(?:st|nd|rd|th)?/) || [])[1])) : NaN;
+  if (!isNaN(sc) && sc >= 0 && sc <= 9) return { value: SCROLL_PRICES[sc], why: sc ? `level ${sc} spell scroll` : 'cantrip scroll' };
+  const all = [...Object.values(ITEM_POOLS), ...Object.values(VAULT_POOLS), ...Object.values(LEGENDARY_POOLS)].flat();
+  const hit = all.filter(i => l.includes(i.name.toLowerCase().replace(/ \(.*\)$/, ''))).sort((a, b) => b.name.length - a.name.length)[0];
+  if (hit) return { value: hit.baseCost, why: `matches ${hit.name}` };
+  if (word) return { value: RARITY[word], why: `${word} magic item` };
+  if (base) return { value: BASE_GEAR[base], why: `standard ${base}` };
+  if (/potion/.test(l)) return { value: /supreme/.test(l) ? 5000 : /superior/.test(l) ? 500 : /greater/.test(l) ? 150 : 50, why: 'potion' };
+  if (/scroll/.test(l)) return { value: 75, why: 'scroll' };
+  if (/gem|ruby|diamond|emerald|sapphire/.test(l)) return { value: 300, why: 'gemstone' };
+  if (/map|atlas|chart/.test(l)) return { value: 100, why: 'map' };
+  if (/staff|wand|rod|ring|amulet|cloak|boots/.test(l)) return { value: 400, why: 'unidentified magic item, assuming uncommon' };
+  return { value: 50, why: 'unknown item, default value' };
+}
+
+let curPage = 'shop';
+function applyPage() {
+  $('dm-nav').classList.remove('hidden');
+  $('page-shop').classList.toggle('hidden', curPage !== 'shop');
+  $('page-enc').classList.toggle('hidden', !(curPage === 'enc' && isDM));
+  $('page-penc').classList.toggle('hidden', !(curPage === 'enc' && !isDM));
+  $('page-maps').classList.toggle('hidden', curPage !== 'maps');
+  
+  const shopOn = 'flex-1 py-2 rounded-lg bg-gold-500 text-navy-950 font-bold', shopOff = 'flex-1 py-2 rounded-lg text-slate-400';
+  $('nav-shop').className = curPage === 'shop' ? shopOn : shopOff; 
+  $('nav-enc').className = curPage === 'enc' ? shopOn : shopOff; 
+  $('nav-maps').className = curPage === 'maps' ? shopOn : shopOff;
+  updateEncDot();
+  
+  $('dm-map-ctrl').classList.toggle('hidden', !isDM);
+}
+
+function playerName() {
+  const n = $('pl-name').value.trim().slice(0, 30);
+  if (!n) { toast('Enter your character name first.'); $('pl-name').focus(); return null; }
+  try { localStorage.setItem('rf_name', n); } catch (e) {}
+  if (nameKey(n) !== revKey) watchReveals();
+  return n;
+}
+async function sendRequest(data, player, okMsg, done) {
+  if (!fb) return toast('Not connected.');
+  if (Date.now() - lastReq < 3000) return toast('Slow down — wait a moment.');
+  lastReq = Date.now();
+  try { await fb.addDoc(fb.reqCol, { ...data, player, ts: Date.now() }); toast(okMsg); done?.(); }
+  catch (e) { console.error(e); toast('Could not send request.'); }
+}
+function removeReq(id) { fb?.deleteDoc(fb.doc(fb.db, 'requests', id)).catch(() => toast('Could not clear request.')); }
+function notifyDM(r) {
+  toast(r.type === 'loot' ? `🔔 ${r.player} wants to loot ${r.item || 'a monster'}` : r.type === 'buy' ? `🔔 ${r.player} wants to buy ${r.itemName}` : `🔔 ${r.player} wants to haggle: ${r.item}`);
+  navigator.vibrate?.(200);
+  try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(); o.frequency.value = 880; o.connect(c.destination); o.start(); o.stop(c.currentTime + 0.15); } catch (e) {}
+}
+function watchRequests() {
+  reqUnsub?.(); reqUnsub = null; reqFirst = true;
+  if (!fb) return;
+  reqUnsub = fb.onSnapshot(fb.query(fb.reqCol, fb.orderBy('ts')), snap => {
+    requests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!reqFirst) snap.docChanges().filter(c => c.type === 'added').forEach(c => notifyDM(c.doc.data()));
+    reqFirst = false; render();
+  }, e => console.error(e));
+}
+function renderRequests() {
+  const pill = $('req-pill'), box = $('req-box'), lbox = $('loot-req-box'), n = isDM ? requests.length : 0;
+  pill.classList.toggle('hidden', !n);
+  if (n) pill.innerHTML = `<i class="fa-solid fa-bell mr-1"></i>${n} request${n === 1 ? '' : 's'}`;
+  const onItem = r => r.type === 'buy' && !!shop && (r.vault ? visibleVault(shop) : (shop.items || [])).some(i => i.id === r.itemId);
+  const top = isDM ? requests.filter(r => r.type === 'haggle' || (r.type === 'buy' && !onItem(r))) : [];
+  const loots = isDM ? requests.filter(r => r.type === 'loot') : [];
+  box.classList.toggle('hidden', !top.length);
+  box.innerHTML = top.length ? `<h3 class="font-cinzel font-bold text-lg text-rose-300"><i class="fa-solid fa-bell mr-2"></i>Player Requests (${top.length})</h3>` + top.map(r => r.type === 'buy'
+    ? `<div class="bg-navy-950 border border-rose-800 rounded-xl p-3 text-xs space-y-2"><div><strong class="text-gold-400">${esc(r.player)}</strong> wants to buy <strong>${esc(r.itemName)}</strong>${r.vault ? ' <span class="text-purple-300">(vault)</span>' : ''} for <span class="text-gold-400 font-mono">${Number(r.cost) || 0} GP</span> <span class="text-slate-500">(no longer on display)</span></div>
+        <div class="flex gap-2"><button data-act="approve" data-id="${r.id}" class="flex-1 py-1.5 bg-emerald-600 text-white font-bold rounded-lg">Approve</button><button data-act="decline" data-id="${r.id}" class="flex-1 py-1.5 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg">Decline</button></div></div>`
+    : `<div class="bg-navy-950 border border-amber-700 rounded-xl p-3 text-xs space-y-2"><div><strong class="text-gold-400">${esc(r.player)}</strong> wants to haggle: <strong>${esc(r.item)}</strong> · rolled <span class="text-gold-400 font-mono">${Number(r.roll) || 0}</span></div>
+        <div class="flex gap-2"><button data-act="startHaggle" data-id="${r.id}" class="flex-1 py-1.5 bg-amber-600 text-navy-950 font-bold rounded-lg">Start Haggle</button><button data-act="decline" data-id="${r.id}" class="flex-1 py-1.5 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg">Dismiss</button></div></div>`).join('') : '';
+  lbox.classList.toggle('hidden', !loots.length);
+  lbox.innerHTML = loots.length ? `<h3 class="font-cinzel font-bold text-lg text-emerald-300"><i class="fa-solid fa-bell mr-2"></i>Loot Requests (${loots.length})</h3>` + loots.map(lootReqCard).join('') : '';
+}
+
+/* ---------- Dynamic Repository Map Folder Structure ---------- */
+const REPO_OWNER = 'cematson82', REPO_NAME = 'Vicioustechydnd', MAPS_DIR = 'Maps';
+const REPO_BASE_URL = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${MAPS_DIR}`;
+const GH_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${MAPS_DIR}`;
+const IMG_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
+const prettyMapName = f => f.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+
+/* Lists a folder inside /maps using the GitHub contents API (cached per session to stay under rate limits) */
+async function listRepoDir(sub = '') {
+  const key = 'rf_gh:' + sub;
+  try { const c = sessionStorage.getItem(key); if (c) return JSON.parse(c); } catch (e) {}
+  const res = await fetch(GH_API + (sub ? '/' + encodeURIComponent(sub) : ''), { headers: { Accept: 'application/vnd.github+json' } });
+  if (!res.ok) throw new Error('GitHub ' + res.status);
+  const data = await res.json();
+  try { sessionStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+  return data;
+}
+
+let mapScale = 1;
+let mapPos = { x: 0, y: 0 };
+let isDraggingMap = false;
+let startDrag = { x: 0, y: 0 };
+
+function resetMapSelect(msg) {
+  const ms = $('dm-map-select'); if (!ms) return;
+  ms.innerHTML = `<option value="">${msg}</option>`;
+  ms.disabled = true; ms.classList.add('opacity-50', 'cursor-not-allowed');
+}
+
+async function initCampaignDropdowns() {
+  const campSelect = $('dm-campaign-select');
+  if (!campSelect) return;
+  try {
+    const items = await listRepoDir();
+    const folders = items.filter(i => i.type === 'dir').map(i => i.name).sort((x, y) => x.localeCompare(y));
+    campSelect.innerHTML = '<option value="">-- Choose Campaign Folder --</option>' +
+      folders.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    if (!folders.length) toast(`No campaign folders found in /${MAPS_DIR}.`);
+  } catch (e) {
+    console.error(e);
+    campSelect.innerHTML = '<option value="">-- Could not read maps folder --</option>';
+  }
+}
+
+function updateMapTransform() {
+  const stage = $('map-stage');
+  if (stage) {
+    stage.style.transform = `translate(${mapPos.x}px, ${mapPos.y}px) scale(${mapScale})`;
+  }
+}
+
+const MAP_MIN = 0.1, MAP_MAX = 6;
+let mapFit = 1;
+
+function fitMap() {
+  const img = $('map-img'), vp = $('map-viewport');
+  if (!img || !vp || !img.naturalWidth) { mapScale = 1; mapPos = { x: 0, y: 0 }; return updateMapTransform(); }
+  mapFit = Math.min(vp.clientWidth / img.naturalWidth, vp.clientHeight / img.naturalHeight, 1) || 1;
+  mapScale = mapFit; mapPos = { x: 0, y: 0 };
+  updateMapTransform();
+}
+
+function loadMap(url) {
+  const img = $('map-img');
+  const ph = $('map-placeholder');
+  if (!url) {
+    img.classList.add('hidden');
+    ph.classList.remove('hidden');
+    return;
+  }
+  img.onload = () => {
+    img.classList.remove('hidden');
+    ph.classList.add('hidden');
+    fitMap();
+  };
+  img.onerror = () => {
+    toast('Failed to load map image URL.');
+    img.classList.add('hidden');
+    ph.classList.remove('hidden');
+  };
+  img.src = url;
+}
+
+let lastMapUrl = null, mapFirstSnap = true;
+function watchMapSync() {
+  if (!fb) return;
+  fb.onSnapshot(fb.doc(fb.db, 'reveals', '_map'), snap => {
+    const first = mapFirstSnap; mapFirstSnap = false;
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data.url || data.url === lastMapUrl) return;
+    lastMapUrl = data.url;
+    loadMap(data.url);
+    if (!isDM && !first) { toast('The DM shared a new map!'); curPage = 'maps'; applyPage(); }
+  }, () => {});
+}
+
+/* Campaign folder chosen: list the images inside that folder */
+$('dm-campaign-select')?.addEventListener('change', async (e) => {
+  const folder = e.target.value;
+  const mapSelect = $('dm-map-select');
+  if (!folder) return resetMapSelect('-- Select Campaign First --');
+  resetMapSelect('Loading maps…');
+  try {
+    const items = await listRepoDir(folder);
+    if ($('dm-campaign-select').value !== folder) return; // selection changed while loading
+    const maps = items.filter(i => i.type === 'file' && IMG_EXT.test(i.name)).sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
+    if (!maps.length) return resetMapSelect('-- No maps in this folder --');
+    mapSelect.innerHTML = '<option value="">-- Select Map --</option>' +
+      maps.map(m => `<option value="${esc(REPO_BASE_URL + '/' + encodeURIComponent(folder) + '/' + encodeURIComponent(m.name))}">${esc(prettyMapName(m.name))}</option>`).join('');
+    mapSelect.disabled = false;
+    mapSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+  } catch (err) {
+    console.error(err);
+    resetMapSelect('-- Could not load maps --');
+    toast('Could not read that folder from GitHub.');
+  }
+});
+
+/* Handle Map Selection and Publish */
+$('dm-map-select')?.addEventListener('change', (e) => {
+  const url = e.target.value;
+  if (!url) return;
+  lastMapUrl = url;
+  loadMap(url);
+  if (fb && isDM) {
+    fb.setDoc(fb.doc(fb.db, 'reveals', '_map'), { url, ts: Date.now() })
+      .then(() => toast('Map published to players.'))
+      .catch(() => toast('Failed to publish map state.'));
+  }
+});
+
+/* ---- Pan (drag / swipe) and zoom (pinch / wheel / buttons) ---- */
+const viewport = $('map-viewport');
+const ptrs = new Map();           // active pointers: id -> {x, y}
+let pinch = null;                 // {dist, scale}
+
+// Zoom keeping the point (cx, cy) (relative to viewport center) fixed under the finger/cursor
+function zoomAt(newScale, cx = 0, cy = 0) {
+  newScale = Math.min(Math.max(MAP_MIN, newScale), MAP_MAX);
+  const k = newScale / mapScale;
+  mapPos = { x: cx - (cx - mapPos.x) * k, y: cy - (cy - mapPos.y) * k };
+  mapScale = newScale;
+  updateMapTransform();
+}
+const relToCenter = (x, y) => { const r = viewport.getBoundingClientRect(); return { x: x - (r.left + r.width / 2), y: y - (r.top + r.height / 2) }; };
+
+viewport?.addEventListener('pointerdown', (e) => {
+  viewport.setPointerCapture?.(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) startDrag = { x: e.clientX - mapPos.x, y: e.clientY - mapPos.y };
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, scale: mapScale }; }
+});
+
+viewport?.addEventListener('pointermove', (e) => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size >= 2 && pinch) {
+    const [a, b] = [...ptrs.values()];
+    const mid = relToCenter((a.x + b.x) / 2, (a.y + b.y) / 2);
+    zoomAt(pinch.scale * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.dist), mid.x, mid.y);
+  } else if (ptrs.size === 1) {
+    mapPos = { x: e.clientX - startDrag.x, y: e.clientY - startDrag.y };
+    updateMapTransform();
+  }
+});
+
+const endPtr = (e) => {
+  ptrs.delete(e.pointerId);
+  pinch = null;
+  if (ptrs.size === 1) { const p = [...ptrs.values()][0]; startDrag = { x: p.x - mapPos.x, y: p.y - mapPos.y }; } // keep panning smoothly after lifting one finger
+};
+viewport?.addEventListener('pointerup', endPtr);
+viewport?.addEventListener('pointercancel', endPtr);
+
+viewport?.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const c = relToCenter(e.clientX, e.clientY);
+  zoomAt(mapScale * (e.deltaY < 0 ? 1.15 : 0.87), c.x, c.y);
+}, { passive: false });
+
+const A = {
+  authBtn() { if (isDM) return A.logout(); $('login').classList.remove('hidden'); },
+  closeLogin() { $('login').classList.add('hidden'); $('lg-pin').value = ''; $('lg-err').classList.add('hidden'); },
+  async doLogin() {
+    const err = $('lg-err'); err.classList.add('hidden');
+    if (!LIVE) { enterDM(); return; }
+    try { await fb.signIn(fb.auth, DM_EMAIL, $('lg-pin').value); $('lg-pin').value = ''; }
+    catch (e) { $('lg-pin').value = ''; err.textContent = 'Incorrect PIN.'; err.classList.remove('hidden'); }
+  },
+  pinDigit(d) { const i = $('lg-pin'); if (i.value.length < 12) i.value += d; },
+  pinClear() { $('lg-pin').value = ''; },
+  async logout() { if (fb) await fb.signOut(fb.auth); isDM = false; haggle = null; reqUnsub?.(); requests = []; if (!LIVE) { render(); return; } shop = null; subscribePlayers(); render(); },
+  gen() { shop = newShop($('dm-cat').value, $('dm-qual').value); haggle = null; $('haggle-res').classList.add('hidden'); $('dm-vroll').value = ''; commit(); toast('New shop published!'); },
+  vault() {
+    if (shop.closed) return toast('The shop is closed. Reopen it first.');
+    const r = parseInt($('dm-vroll').value), dc = parseInt($('dm-vdc').value) || 15;
+    if (isNaN(r)) return toast('Enter a persuasion total.');
+    shop.persuasionRoll = r;
+    shop.vaultState = r < dc ? 'locked' : r < dc + 5 ? 'low' : r < dc + 10 ? 'partial' : 'full';
+    commit();
+    toast(shop.vaultState === 'locked' ? `${r} misses DC ${dc}. Players see nothing.` : `Vault revealed (${shop.vaultState === 'low' ? 'a glimpse' : shop.vaultState === 'partial' ? 'partial' : 'full'}).`);
+  },
+  nat1() {
+    shop.persuasionRoll = 1; $('dm-vroll').value = 1; shop.vaultState = 'locked'; shop.closed = true; haggle = null;
+    $('haggle-res').classList.add('hidden'); commit();
+    toast(`Natural 1! ${shop.keeper || 'The keeper'} is offended and closes the shop.`);
+  },
+  setGold() { const g = parseInt($('dm-gold').value); if (isNaN(g) || g < 0) return toast('Enter a gold amount.'); shop.merchantGold = g; commit(); toast(`Shop gold set to ${g.toLocaleString()} GP.`); },
+  reopen() { shop.closed = false; commit(); toast('Shop reopened.'); },
+  nat20() {
+    if (shop.closed) return toast('The shop is closed. Reopen it first.');
+    shop.persuasionRoll = 20; $('dm-vroll').value = 20;
+    if (!shop.vaultItems.some(i => i.isLegendary)) { const l = rand(LEGENDARY_POOLS[shop.cat] || LEGENDARY_POOLS.general); shop.vaultItems.unshift({ ...l, cost: l.baseCost, stock: 1, isLegendary: true }); }
+    shop.vaultState = 'nat20'; commit(); toast('Natural 20! Legendary item unlocked!');
+  },
+  hide() { shop.vaultState = 'locked'; commit(); toast('Vault hidden.'); },
+  buy(id, v) {
+    const it = (v ? shop.vaultItems : shop.items).find(i => i.id === id);
+    if (!it || it.stock <= 0) return toast('Out of stock.');
+    it.stock--; shop.merchantGold += it.cost; commit(); toast(`Sold ${it.name} for ${it.cost} GP`);
+  },
+  haggle() {
+    const raw = $('hg-item').value.trim().slice(0, 60), item = esc(raw), rv = $('hg-roll').value;
+    if (!item) return toast('Enter an item name.'); if (rv === '') return toast("Enter the player's roll.");
+    const roll = parseInt(rv), dc = parseInt($('dm-dc').value) || 15;
+    const guess = estimateValue(raw), ov = parseInt($('hg-value').value), est = ov > 0 ? ov : guess.value, why = ov > 0 ? 'DM set value' : guess.why;
+    let mod, tier, flavor; const nat1 = roll === 1;
+    if (nat1) { mod = -0.7; tier = 'Critical Failure (Nat 1)'; flavor = 'Get that trash out of my shop!'; shop.vaultState = 'locked'; shop.persuasionRoll = 1; commit(); }
+    else if (roll === 20) { mod = 0.2; tier = 'Critical Success (Nat 20)'; flavor = 'By the gods, a silver tongue! Exceptional terms.'; }
+    else if (roll >= dc + 5) { mod = 0.1; tier = 'Great Deal'; flavor = 'A fine piece. I can stretch my margins.'; }
+    else if (roll >= dc) { mod = 0; tier = 'Fair Offer'; flavor = 'A fair argument and a standard price.'; }
+    else { mod = -0.2; tier = 'Failed Check'; flavor = 'Rough around the edges. A poor valuation.'; }
+    const price = Math.round(est * 0.5 * (1 + mod));
+    haggle = { item, est, why, price, cash: price, inc: [], nat1, tier, flavor }; renderHaggle();
+  },
+  inc(id) { const t = [...shop.items, ...visibleVault(shop)].find(i => i.id === id); if (!t || t.cost > haggle.cash) return; haggle.inc.push({ id: t.id, name: t.name, cost: t.cost }); haggle.cash -= t.cost; renderHaggle(); },
+  unInc(id) { const k = haggle.inc.findIndex(i => i.id === id); if (k > -1) { haggle.cash += haggle.inc.splice(k, 1)[0].cost; renderHaggle(); } },
+  finalize() {
+    if (shop.merchantGold < haggle.cash) return toast('Merchant lacks the gold for this payout!');
+    haggle.inc.forEach(x => { const t = [...shop.items, ...shop.vaultItems].find(i => i.id === x.id); if (t && t.stock > 0) t.stock--; });
+    shop.merchantGold -= haggle.cash;
+    shop.items.push({ id: 'sold_' + Date.now(), name: haggle.item, type: 'Acquired Ware', baseCost: haggle.est, cost: haggle.est, stock: 1, desc: `Acquired via player trade (${haggle.tier}).` });
+    $('recap-body').innerHTML = `<div class="bg-navy-950 p-3 rounded-xl border border-navy-800"><div class="text-gold-400 font-bold text-sm">${haggle.item} added to shelves</div><div class="text-slate-300">Agreed value ${haggle.price} GP (${haggle.tier})</div></div>
+      <div class="bg-navy-950 p-3 rounded-xl border border-navy-800 space-y-1"><div class="text-slate-400 text-[10px] uppercase font-bold">Items acquired by party</div>${haggle.inc.length ? haggle.inc.map(i => `<div class="flex justify-between"><span>• ${i.name}</span><span class="text-gold-400 font-mono">${i.cost} GP</span></div>`).join('') : '<span class="text-slate-500 italic">Cash-only sale.</span>'}</div>
+      <div class="grid grid-cols-2 gap-2"><div class="bg-navy-950 p-2.5 rounded-xl border border-navy-800">Cash paid<br><strong class="text-emerald-400 font-mono">${haggle.cash} GP</strong></div><div class="bg-navy-950 p-2.5 rounded-xl border border-navy-800">Shop gold<br><strong class="text-gold-400 font-mono">${shop.merchantGold.toLocaleString()} GP</strong></div></div>`;
+    $('recap').classList.remove('hidden'); commit();
+  },
+  closeRecap() { $('recap').classList.add('hidden'); haggle = null; $('haggle-res').classList.add('hidden'); $('hg-item').value = ''; $('hg-roll').value = ''; $('hg-value').value = ''; },
+  save() { if (!shop) return; const a = getSaved(); a.push({ ...JSON.parse(JSON.stringify(shop)), savedId: 's' + Date.now(), savedDate: new Date().toLocaleDateString() }); putSaved(a); renderSaved(); toast('Store saved.'); },
+  load(id) { const s = getSaved().find(x => x.savedId === id); if (!s) return; shop = fillShop(JSON.parse(JSON.stringify(s))); haggle = null; commit(); toast(`Loaded "${shop.name}" and published.`); },
+  del(id) { putSaved(getSaved().filter(x => x.savedId !== id)); renderSaved(); },
+  openInv() { $('inv-modal').classList.remove('hidden'); },
+  closeInv() { $('inv-modal').classList.add('hidden'); },
+  openFallen() { $('fallen-modal').classList.remove('hidden'); },
+  closeFallen() { $('fallen-modal').classList.add('hidden'); },
+  page(id) { curPage = id; applyPage(); window.scrollTo(0, 0); },
+  forge() { forgeEncounter(); },
+  zoomIn() { zoomAt(mapScale * 1.25); },
+  zoomOut() { zoomAt(mapScale * 0.8); },
+  zoomReset() { fitMap(); },
+  lootMon(id) {
+    const f = rev.fallen; if (!f) return;
+    const name = playerName(); if (!name) return;
+    const idx = +id, m = (f.monsters || []).find(x => Number(x.idx) === idx); if (!m) return;
+    const key = f.encId + ':' + idx;
+    if (askedLoot.has(key)) return toast('You already asked about that one.');
+    const r = parseInt($('pl-loot-roll').value), d = { type: 'loot', item: String(m.label).slice(0, 60), cost: idx };
+    if (!isNaN(r) && r >= 1 && r <= 40) d.roll = r;
+    sendRequest(d, name, `Asked to loot ${m.label}`, () => { askedLoot.add(key); renderFallen(); });
+  },
+  showFallen() {
+    if (!enc) return toast('Forge an encounter first.');
+    if (!fb) return toast('Not connected. Nothing was shared.');
+    fb.setDoc(fb.doc(fb.db, 'reveals', '_fallen'), { encId: enc.id, monsters: monsterLabels(enc).map((label, idx) => ({ label, idx })), ts: Date.now() })
+      .then(() => toast('Defeated monsters shown to players.')).catch(() => toast('Could not share. Check the Firestore rules.'));
+  },
+  hideFallen() { if (!fb) return; fb.deleteDoc(fb.doc(fb.db, 'reveals', '_fallen')).then(() => toast('Defeated monsters hidden.')).catch(() => toast('Could not hide them.')); },
+  showMon(id) { sendReveal('one', 'all', Number(id)); },
+  useRoll(id) { const r = requests.find(x => x.id === id); if (!r) return; A.page('enc'); $('loot-roll').value = r.roll; doLoot(false); $('loot-out').scrollIntoView({ behavior: 'smooth', block: 'center' }); },
+  lootTo(id) { const r = requests.find(x => x.id === id); if (r && sendReveal('one', r.player, Number(r.cost))) removeReq(id); },
+  lootAll(id) { const r = requests.find(x => x.id === id); if (r && sendReveal('one', 'all', Number(r.cost))) removeReq(id); },
+  ackLoot() {
+    seenRev = { me: rev.me ? Number(rev.me.ts) : (seenRev.me || 0), all: rev.all ? Number(rev.all.ts) : (seenRev.all || 0) };
+    try { localStorage.setItem('rf_rev_seen', JSON.stringify(seenRev)); } catch (e) {}
+    renderReveal();
+  },
+  revealAll(id, mode) { sendReveal(mode, 'all'); },
+  hideLoot() { if (!fb) return; fb.deleteDoc(fb.doc(fb.db, 'reveals', '_party')).then(() => { delete sentTo._party; saveEnc(); toast('Loot hidden from the party view.'); }).catch(() => toast('Could not hide loot.')); },
+  lootRoll() { doLoot(false); },
+  lootNat20() { doLoot(true); },
+  goReq() {
+    const r = requests[0]; if (!r) return;
+    if (r.type === 'loot') { A.page('enc'); setTimeout(() => $('loot-req-box').scrollIntoView({ behavior: 'smooth' }), 60); return; }
+    A.page('shop');
+    setTimeout(() => { const el = r.type === 'buy' ? document.querySelector?.(`[data-req="${r.id}"]`) : null; (el || $('req-box')).scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60);
+  },
+  reqBuy(id, v) {
+    const name = playerName(); if (!name || !shop) return;
+    const it = (v ? (shop.vault || []) : shop.items).find(i => i.id === id);
+    if (!it || it.stock <= 0) return toast('That item is sold out.');
+    sendRequest({ type: 'buy', itemId: id, vault: !!v, itemName: it.name, cost: it.cost }, name, `Request sent: ${it.name}`);
+  },
+  reqHaggle() {
+    const name = playerName(); if (!name) return;
+    const item = $('pl-item').value.trim().slice(0, 60), roll = parseInt($('pl-roll').value);
+    if (!item) return toast('Enter the item you want to sell.');
+    if (isNaN(roll) || roll < 1 || roll > 40) return toast('Enter your Persuasion roll (1-40).');
+    sendRequest({ type: 'haggle', item, roll }, name, 'Haggle request sent to the DM!', () => { $('pl-item').value = ''; $('pl-roll').value = ''; });
+  },
+  approve(id) {
+    const r = requests.find(x => x.id === id); if (!r) return;
+    const it = (r.vault ? shop.vaultItems : shop.items).find(i => i.id === r.itemId);
+    if (!it || it.stock <= 0) toast(`${r.itemName} is sold out. Request cleared.`);
+    else { it.stock--; shop.merchantGold += it.cost; commit(); toast(`Sold ${it.name} to ${r.player}`); }
+    removeReq(id);
+  },
+  decline(id) { removeReq(id); },
+  startHaggle(id) {
+    const r = requests.find(x => x.id === id); if (!r) return;
+    $('hg-item').value = r.item; $('hg-roll').value = r.roll;
+    removeReq(id); $('hg-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast(`${r.player}'s haggle loaded. Check the roll, then tap Haggle.`);
+  }
+};
+document.addEventListener('click', e => {
+  if (e.target.id === 'inv-modal') return A.closeInv(); // tap the dark backdrop to close
+  if (e.target.id === 'fallen-modal') return A.closeFallen();
+  const b = e.target.closest('[data-act]'); if (b && !b.disabled) A[b.dataset.act]?.(b.dataset.id, b.dataset.v);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { A.closeInv(); A.closeFallen(); } });
+
+/* ---------- DM entry ---------- */
+async function enterDM() {
+  isDM = true; initCampaignDropdowns(); applyPage(); $('login').classList.add('hidden'); unsub?.(); unsub = null; watchRequests(); watchReveals();
+  if (fb) {
+    try {
+      const [p, s] = await Promise.all([fb.getDoc(fb.pubRef), fb.getDoc(fb.secRef)]);
+      if (p.exists()) { const { vault, updated, ...rest } = p.data(); shop = { ...rest, vaultItems: s.exists() ? s.data().vaultItems || [] : [] }; }
+    } catch (e) { toast('Could not load the live shop.'); }
+  }
+  if (!shop) shop = newShop('general', 'average');
+  fillShop(shop);
+  if (!enc) restoreEnc();
+  setStatus(fb ? 'DM · Live' : 'DM · Offline demo', fb ? 'bg-emerald-400' : 'bg-amber-400');
+  commit();
+}
+
+/* ---------- boot ---------- */
+try { $('pl-name').value = localStorage.getItem('rf_name') || ''; } catch (e) {}
+$('pl-name').addEventListener('change', () => watchReveals());
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if (LIVE) {
+  try {
+    const V = '10.12.2', base = `https://www.gstatic.com/firebasejs/${V}/`;
+    const [{ initializeApp }, fs, au] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js')]);
+    const app = initializeApp(firebaseConfig), db = fs.getFirestore(app), auth = au.getAuth(app);
+    fb = { ...fs, auth, signIn: au.signInWithEmailAndPassword, signOut: au.signOut, pubRef: fs.doc(db, 'shop', 'current'), secRef: fs.doc(db, 'shop_secret', 'current'), db, reqCol: fs.collection(db, 'requests') };
+    au.onAuthStateChanged(auth, u => { if (u) enterDM(); else if (isDM) { isDM = false; reqUnsub?.(); requests = []; subscribePlayers(); render(); } });
+    subscribePlayers();
+    watchMapSync();
+  } catch (e) { console.error(e); setStatus('Could not connect', 'bg-rose-500'); }
+} else {
+  $('cfg-banner').classList.remove('hidden'); setStatus('Offline demo', 'bg-amber-400');
+  shop = null; render();
+}
+</script>
+</body>
+</html>
