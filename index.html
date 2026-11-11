@@ -31,9 +31,10 @@
 <main class="max-w-5xl mx-auto p-4 space-y-6">
 
   <!-- DM PAGE NAVIGATION (DM only) -->
-  <nav id="dm-nav" class="hidden grid grid-cols-2 gap-1.5 bg-navy-900 p-1.5 rounded-xl border border-navy-800 text-xs font-semibold">
+  <nav id="dm-nav" class="hidden grid grid-cols-3 gap-1.5 bg-navy-900 p-1.5 rounded-xl border border-navy-800 text-xs font-semibold">
     <button id="nav-shop" data-act="page" data-id="shop" class="flex-1 py-2 rounded-lg bg-gold-500 text-navy-950 font-bold"><i class="fa-solid fa-shop mr-1"></i>Shop</button>
-    <button id="nav-enc" data-act="page" data-id="enc" class="flex-1 py-2 rounded-lg text-slate-400"><i class="fa-solid fa-dragon mr-1"></i>Encounter & Loot</button>
+    <button id="nav-enc" data-act="page" data-id="enc" class="flex-1 py-2 rounded-lg text-slate-400"><i class="fa-solid fa-dragon mr-1"></i>Encounter</button>
+    <button id="nav-maps" data-act="page" data-id="maps" class="flex-1 py-2 rounded-lg text-slate-400"><i class="fa-solid fa-map mr-1"></i>Maps</button>
   </nav>
 
   <!-- PLAYER REQUESTS (DM only, shown on every DM page) -->
@@ -185,6 +186,62 @@
       </div>
     </div>
     <div id="loot-req-box" class="hidden bg-emerald-950/30 border-2 border-emerald-500/50 rounded-2xl p-5 space-y-3"></div>
+  </section>
+
+  <!-- PAGE 3: MAP VIEWER -->
+  <section id="page-maps" class="hidden space-y-4">
+    <!-- DM CONTROLS (DM only) -->
+    <div id="dm-map-ctrl" class="hidden bg-navy-900/80 border border-gold-500/30 rounded-2xl p-4 space-y-3">
+      <h3 class="font-cinzel font-bold text-sm text-gold-400"><i class="fa-solid fa-map-location-dot mr-2"></i>DM Map Selector</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">1. Select Campaign Folder</label>
+          <select id="dm-campaign-select" class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium">
+            <option value="">-- Choose Campaign Folder --</option>
+            <option value="lmop">Lost Mine of Phandelver</option>
+            <option value="cos">Curse of Strahd</option>
+            <option value="toa">Tomb of Annihilation</option>
+            <option value="wbw">The Wild Beyond the Witchlight</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">2. Select Map</label>
+          <select id="dm-map-select" disabled class="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium opacity-50 cursor-not-allowed">
+            <option value="">-- Select Campaign First --</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">Custom / External Map URL</label>
+          <div class="flex gap-2">
+            <input id="dm-map-url" type="url" placeholder="https://..." class="flex-1 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs">
+            <button data-act="setCustomMap" class="px-3 py-2 bg-amber-600 text-navy-950 font-bold rounded-xl text-xs">Publish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP CONTAINER (Zoomable / Pannable Display) -->
+    <div class="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden flex flex-col relative" style="height: 72vh;">
+      <!-- Legal Disclaimer Banner -->
+      <div class="bg-navy-950/95 border-b border-navy-800 p-2 text-[10px] text-slate-400 text-center z-10 leading-tight">
+        Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. This application is an unofficial Fan Content tool permitted under the Fan Content Policy. Not approved or endorsed by Wizards.
+      </div>
+
+      <!-- Zoom & Control Palette -->
+      <div class="absolute top-12 right-4 z-20 flex flex-col gap-1.5 bg-navy-950/80 p-1.5 rounded-xl border border-navy-700 backdrop-blur">
+        <button id="btn-zoom-in" data-act="zoomIn" title="Zoom In" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-gold-400 font-bold"><i class="fa-solid fa-plus"></i></button>
+        <button id="btn-zoom-out" data-act="zoomOut" title="Zoom Out" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-gold-400 font-bold"><i class="fa-solid fa-minus"></i></button>
+        <button id="btn-zoom-reset" data-act="zoomReset" title="Reset Scale" class="w-8 h-8 rounded-lg bg-navy-800 hover:bg-navy-700 text-slate-300 text-xs font-bold">1:1</button>
+      </div>
+
+      <!-- Interactive Canvas -->
+      <div id="map-viewport" class="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing bg-navy-950 flex items-center justify-center">
+        <div id="map-stage" class="origin-center transition-transform duration-75 ease-out select-none">
+          <img id="map-img" src="" alt="Active Battle Map" class="max-w-none hidden shadow-2xl rounded" />
+          <div id="map-placeholder" class="text-xs text-slate-500 italic p-6 text-center">No active map published by the DM.</div>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -817,13 +874,22 @@ function estimateValue(raw) {
 
 let curPage = 'shop';
 function applyPage() {
-  if (!isDM) curPage = 'shop';
+  if (!isDM) {
+    if (curPage === 'maps') curPage = 'shop';
+  }
   $('dm-nav').classList.toggle('hidden', !isDM);
-  $('page-shop').classList.toggle('hidden', curPage === 'enc');
+  $('page-shop').classList.toggle('hidden', curPage !== 'shop');
   $('page-enc').classList.toggle('hidden', curPage !== 'enc');
-  const on = 'flex-1 py-2 rounded-lg bg-gold-500 text-navy-950 font-bold', off = 'flex-1 py-2 rounded-lg text-slate-400';
-  $('nav-shop').className = curPage === 'shop' ? on : off; $('nav-enc').className = curPage === 'enc' ? on : off;
+  $('page-maps').classList.toggle('hidden', curPage !== 'maps');
+  
+  const shopOn = 'flex-1 py-2 rounded-lg bg-gold-500 text-navy-950 font-bold', shopOff = 'flex-1 py-2 rounded-lg text-slate-400';
+  $('nav-shop').className = curPage === 'shop' ? shopOn : shopOff; 
+  $('nav-enc').className = curPage === 'enc' ? shopOn : shopOff; 
+  $('nav-maps').className = curPage === 'maps' ? shopOn : shopOff;
+  
+  $('dm-map-ctrl').classList.toggle('hidden', !isDM);
 }
+
 function playerName() {
   const n = $('pl-name').value.trim().slice(0, 30);
   if (!n) { toast('Enter your character name first.'); $('pl-name').focus(); return null; }
@@ -857,7 +923,6 @@ function renderRequests() {
   const pill = $('req-pill'), box = $('req-box'), lbox = $('loot-req-box'), n = isDM ? requests.length : 0;
   pill.classList.toggle('hidden', !n);
   if (n) pill.innerHTML = `<i class="fa-solid fa-bell mr-1"></i>${n} request${n === 1 ? '' : 's'}`;
-  // a buy request shows on its item; only ones whose item is no longer on display fall back to the top list
   const onItem = r => r.type === 'buy' && !!shop && (r.vault ? visibleVault(shop) : (shop.items || [])).some(i => i.id === r.itemId);
   const top = isDM ? requests.filter(r => r.type === 'haggle' || (r.type === 'buy' && !onItem(r))) : [];
   const loots = isDM ? requests.filter(r => r.type === 'loot') : [];
@@ -870,6 +935,149 @@ function renderRequests() {
   lbox.classList.toggle('hidden', !loots.length);
   lbox.innerHTML = loots.length ? `<h3 class="font-cinzel font-bold text-lg text-emerald-300"><i class="fa-solid fa-bell mr-2"></i>Loot Requests (${loots.length})</h3>` + loots.map(lootReqCard).join('') : '';
 }
+
+/* ---------- Map Folder Structure & Data ---------- */
+const MAP_BASE_URL = 'https://cematson82.github.io/Vicioustechydnd/maps';
+
+const CAMPAIGN_MAPS = {
+  lmop: {
+    folder: 'lmop',
+    maps: [
+      { name: 'Cragmaw Hideout', file: 'cragmaw_hideout.jpg' },
+      { name: 'Redbrand Hideout (Tresendar Manor)', file: 'redbrand_hideout.jpg' },
+      { name: 'Cragmaw Castle', file: 'cragmaw_castle.jpg' },
+      { name: 'Wave Echo Cave', file: 'wave_echo_cave.jpg' }
+    ]
+  },
+  cos: {
+    folder: 'cos',
+    maps: [
+      { name: 'Death House', file: 'death_house.jpg' },
+      { name: 'Castle Ravenloft Floorplans', file: 'castle_ravenloft.jpg' },
+      { name: 'Argynvostholt', file: 'argynvostholt.jpg' },
+      { name: 'The Amber Temple', file: 'amber_temple.jpg' }
+    ]
+  },
+  toa: {
+    folder: 'toa',
+    maps: [
+      { name: 'Port Nyanzaru', file: 'port_nyanzaru.jpg' },
+      { name: 'Fane of the Night Serpent', file: 'fane_of_the_night_serpent.jpg' },
+      { name: 'Tomb of the Nine Gods', file: 'tomb_of_the_nine_gods.jpg' }
+    ]
+  },
+  wbw: {
+    folder: 'wbw',
+    maps: [
+      { name: 'Witchlight Carnival Ground', file: 'witchlight_carnival.jpg' },
+      { name: 'Hither – Downfall Settlement', file: 'hither_downfall.jpg' }
+    ]
+  }
+};
+
+let mapScale = 1;
+let mapPos = { x: 0, y: 0 };
+let isDraggingMap = false;
+let startDrag = { x: 0, y: 0 };
+
+function updateMapTransform() {
+  const stage = $('map-stage');
+  if (stage) {
+    stage.style.transform = `translate(${mapPos.x}px, ${mapPos.y}px) scale(${mapScale})`;
+  }
+}
+
+function loadMap(url) {
+  const img = $('map-img');
+  const ph = $('map-placeholder');
+  if (!url) {
+    img.classList.add('hidden');
+    ph.classList.remove('hidden');
+    return;
+  }
+  img.src = url;
+  img.onload = () => {
+    img.classList.remove('hidden');
+    ph.classList.add('hidden');
+    mapScale = 1;
+    mapPos = { x: 0, y: 0 };
+    updateMapTransform();
+  };
+  img.onerror = () => {
+    toast('Failed to load map image URL.');
+    img.classList.add('hidden');
+    ph.classList.remove('hidden');
+  };
+}
+
+function watchMapSync() {
+  if (!fb) return;
+  fb.onSnapshot(fb.doc(fb.db, 'reveals', '_map'), snap => {
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.url) {
+        loadMap(data.url);
+        if (!isDM) toast('The DM updated the active map!');
+      }
+    }
+  }, () => {});
+}
+
+/* Handle Campaign Folder Dropdown Selection */
+$('dm-campaign-select')?.addEventListener('change', (e) => {
+  const campaignKey = e.target.value;
+  const mapSelect = $('dm-map-select');
+  
+  mapSelect.innerHTML = '';
+  
+  if (!campaignKey || !CAMPAIGN_MAPS[campaignKey]) {
+    mapSelect.innerHTML = '<option value="">-- Select Campaign First --</option>';
+    mapSelect.disabled = true;
+    mapSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    return;
+  }
+
+  const campaign = CAMPAIGN_MAPS[campaignKey];
+  mapSelect.innerHTML = '<option value="">-- Select Map --</option>' +
+    campaign.maps.map(m => `<option value="${MAP_BASE_URL}/${campaign.folder}/${m.file}">${m.name}</option>`).join('');
+
+  mapSelect.disabled = false;
+  mapSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+});
+
+/* Handle Map Selection and Publish */
+$('dm-map-select')?.addEventListener('change', (e) => {
+  const url = e.target.value;
+  if (!url) return;
+  
+  loadMap(url);
+  if (fb && isDM) {
+    fb.setDoc(fb.doc(fb.db, 'reveals', '_map'), { url, ts: Date.now() })
+      .then(() => toast('Map published to players.'))
+      .catch(() => toast('Failed to publish map state.'));
+  }
+});
+
+const viewport = $('map-viewport');
+viewport?.addEventListener('mousedown', (e) => {
+  isDraggingMap = true;
+  startDrag = { x: e.clientX - mapPos.x, y: e.clientY - mapPos.y };
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDraggingMap) return;
+  mapPos = { x: e.clientX - startDrag.x, y: e.clientY - startDrag.y };
+  updateMapTransform();
+});
+
+window.addEventListener('mouseup', () => { isDraggingMap = false; });
+
+viewport?.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+  mapScale = Math.min(Math.max(0.4, mapScale * zoomFactor), 5.0);
+  updateMapTransform();
+}, { passive: false });
 
 const A = {
   authBtn() { if (isDM) return A.logout(); $('login').classList.remove('hidden'); },
@@ -944,6 +1152,19 @@ const A = {
   del(id) { putSaved(getSaved().filter(x => x.savedId !== id)); renderSaved(); },
   page(id) { curPage = id; applyPage(); window.scrollTo(0, 0); },
   forge() { forgeEncounter(); },
+  setCustomMap() {
+    const url = $('dm-map-url').value.trim();
+    if (!url) return toast('Please enter a valid image URL.');
+    loadMap(url);
+    if (fb && isDM) {
+      fb.setDoc(fb.doc(fb.db, 'reveals', '_map'), { url, ts: Date.now() })
+        .then(() => toast('Custom map published.'))
+        .catch(() => toast('Failed to publish map.'));
+    }
+  },
+  zoomIn() { mapScale = Math.min(5.0, mapScale * 1.25); updateMapTransform(); },
+  zoomOut() { mapScale = Math.max(0.4, mapScale * 0.8); updateMapTransform(); },
+  zoomReset() { mapScale = 1; mapPos = { x: 0, y: 0 }; updateMapTransform(); },
   lootMon(id) {
     const f = rev.fallen; if (!f) return;
     const name = playerName(); if (!name) return;
@@ -1027,7 +1248,7 @@ async function enterDM() {
 }
 
 /* ---------- boot ---------- */
-try { $('pl-name').value = localStorage.getItem('rf_name') || ''; } catch (e) {}
+try { $('pl-name').value = localStorage.getItem('rf_name'] || ''; } catch (e) {}
 $('pl-name').addEventListener('change', () => watchReveals());
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (LIVE) {
@@ -1038,6 +1259,7 @@ if (LIVE) {
     fb = { ...fs, auth, signIn: au.signInWithEmailAndPassword, signOut: au.signOut, pubRef: fs.doc(db, 'shop', 'current'), secRef: fs.doc(db, 'shop_secret', 'current'), db, reqCol: fs.collection(db, 'requests') };
     au.onAuthStateChanged(auth, u => { if (u) enterDM(); else if (isDM) { isDM = false; reqUnsub?.(); requests = []; subscribePlayers(); render(); } });
     subscribePlayers();
+    watchMapSync();
   } catch (e) { console.error(e); setStatus('Could not connect', 'bg-rose-500'); }
 } else {
   $('cfg-banner').classList.remove('hidden'); setStatus('Offline demo', 'bg-amber-400');
