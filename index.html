@@ -561,12 +561,11 @@ const MAGIC = {
 const cap = w => w.replace(/\b\w/g, c => c.toUpperCase());
 const weaponList = () => Object.keys(BASE_GEAR).filter(k => !ARMOR_BASES.includes(k) && k !== 'shield' && k !== 'crossbow');
 const armorList = () => ARMOR_BASES.filter(k => k !== 'plate');
-// Rarity ceiling = the LOWER of what the party's level and the encounter's highest CR allow.
 const rarByLevel = L => L <= 4 ? 1 : L <= 10 ? 2 : L <= 16 ? 3 : 4;
 const rarByCR = c => c <= 4 ? 1 : c <= 10 ? 2 : c <= 16 ? 3 : 4;
 
 const monsterLabels = e => e.g.flatMap(x => Array.from({ length: x.n }, (_, i) => x.n > 1 ? `${x.m.name} #${i + 1}` : x.m.name));
-const INDIV_GP = [10, 90, 1100, 9000];   // coins per monster by CR band: 0-4, 5-10, 11-16, 17+ (last two are estimates)
+const INDIV_GP = [10, 90, 1100, 9000];
 function genLoot(level, e, roll, dc, nat20, scale = 1) {
   const tier = e.maxCR <= 4 ? 1 : e.maxCR <= 10 ? 2 : e.maxCR <= 16 ? 3 : 4;
   const q = nat20 || roll >= dc + 5 ? 'high' : roll >= dc ? 'average' : 'minimal';
@@ -590,14 +589,13 @@ function genLoot(level, e, roll, dc, nat20, scale = 1) {
   }
   let magicInfo = null;
   if (nat20) {
-    // Rarity ceiling = the lower of what the party level and the encounter's highest CR allow.
     const maxIdx = Math.min(rarByLevel(level), rarByCR(e.maxCR));
     const weights = [3, 4, 3, 2, 1].slice(0, maxIdx + 1), total = weights.reduce((a, b) => a + b, 0);
     let r = Math.random() * total, ri = 0; while (r >= weights[ri]) { r -= weights[ri]; ri++; }
     const rar = RAR_ORDER[ri];
     const name = rand(MAGIC[rar]).replace('{W}', () => cap(rand(weaponList()))).replace('{A}', () => cap(rand(armorList())));
     const value = /^\+\d|^Potion|^Spell Scroll/.test(name) ? estimateValue(name).value : RARITY[rar];
-    slots.reduce((a, b) => b.cr > a.cr ? b : a).items.push({ kind: 'Magic', name, value, rar });   // the toughest monster carries it
+    slots.reduce((a, b) => b.cr > a.cr ? b : a).items.push({ kind: 'Magic', name, value, rar });
     magicInfo = { cap: RAR_ORDER[maxIdx], byLevel: RAR_ORDER[rarByLevel(level)], byCR: RAR_ORDER[rarByCR(e.maxCR)] };
   }
   const items = slots.flatMap(s => s.items), gold = slots.reduce((a, s) => a + s.coins, 0);
@@ -626,12 +624,10 @@ function renderLoot() {
     <div class="border-t border-navy-800 pt-2 flex justify-between"><span>Coins ${L.gold.toLocaleString()} gp · total value</span><strong class="text-emerald-400 font-mono">≈ ${L.total.toLocaleString()} gp</strong></div></div>`;
   $('loot-share').classList.remove('hidden');
 }
-// The DM's encounter and loot stay on screen (even after a reload) until a NEW encounter is forged.
 function saveEnc() { try { localStorage.setItem('rf_enc', JSON.stringify({ enc, lastLoot, sentTo })); } catch (e) {} }
 function restoreEnc() {
   try { const d = JSON.parse(localStorage.getItem('rf_enc') || 'null'); if (d && d.enc) { enc = d.enc; lastLoot = d.lastLoot || null; lootSel = new Set(); sentTo = d.sentTo || {}; renderEnc(); renderLoot(); } } catch (e) {}
 }
-// Tells every player's screen that a new encounter began, so loot shown for the old one disappears.
 function announceEnc() {
   if (fb && isDM) {
     fb.setDoc(fb.doc(fb.db, 'reveals', '_enc'), { id: enc.id, ts: Date.now() }).catch(() => toast('Could not tell players about the new encounter.'));
@@ -639,7 +635,6 @@ function announceEnc() {
   }
 }
 
-/* ---------- showing loot to players (private per player, or to the whole party) ---------- */
 const nameKey = n => String(n).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
 function sendReveal(mode, to, idx) {
   if (!lastLoot) { toast('Roll loot first.'); return false; }
@@ -654,7 +649,7 @@ function sendReveal(mode, to, idx) {
     const prev = sentTo[key] && sentTo[key].encId === eid ? sentTo[key].shown : [];
     const ids = prev.includes(idx) ? prev : [...prev, idx];
     sentTo[key] = { encId: eid, shown: ids }; saveEnc();
-    shown = ids.map(i => L.slots[i]).filter(Boolean);   // everything this player (or the party) has been shown so far
+    shown = ids.map(i => L.slots[i]).filter(Boolean);
   }
   if (mode === 'total') { sentTo[key] = { encId: eid, shown: [] }; saveEnc(); }
   if (mode === 'selected') { shown = L.slots.filter((_, i) => lootSel.has(i)); if (!shown.length) { toast('Tick at least one monster first.'); return false; } }
@@ -722,7 +717,7 @@ function fillShop(x) {
 }
 
 /* ---------- state ---------- */
-let shop = null;          // DM: full shop (with vaultItems). Player: public shop (with vault).
+let shop = null;
 let isDM = false;
 let haggle = null;
 let fb = null, unsub = null;
@@ -835,7 +830,6 @@ function renderHaggle() {
   <button data-act="finalize" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl">Finalize Deal</button>`}`;
 }
 
-/* ---------- saved stores (this device) ---------- */
 const getSaved = () => { try { return JSON.parse(localStorage.getItem('rf_saved') || '[]'); } catch (e) { return []; } };
 const putSaved = a => { try { localStorage.setItem('rf_saved', JSON.stringify(a)); } catch (e) { toast('Could not save on this device.'); } };
 function renderSaved() {
@@ -844,13 +838,12 @@ function renderSaved() {
     <div class="flex gap-1.5"><button data-act="load" data-id="${s.savedId}" class="px-2.5 py-1 bg-gold-500 text-navy-950 font-bold rounded-lg">Load</button><button data-act="del" data-id="${s.savedId}" class="px-2.5 py-1 bg-rose-950 text-rose-300 border border-rose-800 rounded-lg">Delete</button></div></div>`).join('') : '<div class="text-xs text-slate-500 italic">No saved stores.</div>';
 }
 
-/* ---------- actions ---------- */
 const RARITY = { 'very rare': 20000, uncommon: 400, common: 100, rare: 4000, legendary: 50000, artifact: 100000 };
 const BONUS_RARITY = { 1: 'uncommon', 2: 'rare', 3: 'very rare' };
 const BASE_GEAR = { dagger: 2, handaxe: 5, shortsword: 10, longsword: 15, rapier: 25, scimitar: 25, greatsword: 50, greataxe: 30, battleaxe: 10, warhammer: 15, mace: 5, spear: 1, halberd: 20, glaive: 20, pike: 5, trident: 5, flail: 10, morningstar: 15, javelin: 1, maul: 10, lance: 10, whip: 2, shortbow: 25, longbow: 50, 'hand crossbow': 75, 'light crossbow': 25, 'heavy crossbow': 50, crossbow: 25, sling: 1, 'studded leather': 45, 'padded armor': 5, 'leather armor': 10, 'hide armor': 10, 'chain shirt': 50, 'scale mail': 50, breastplate: 400, 'half plate': 750, 'ring mail': 30, 'chain mail': 75, 'splint armor': 200, 'plate armor': 1500, plate: 1500, shield: 10 };
 const ARMOR_BASES = ['studded leather','padded armor','leather armor','hide armor','chain shirt','scale mail','breastplate','half plate','ring mail','chain mail','splint armor','plate armor','plate'];
-const ARMOR_BONUS_RARITY = { 1: 'rare', 2: 'very rare', 3: 'legendary' };   // DMG: armor +1 rare, +2 very rare, +3 legendary
-const SCROLL_PRICES = [25, 75, 150, 300, 500, 1000, 2000, 4000, 8000, 20000];   // cantrip, then levels 1-9
+const ARMOR_BONUS_RARITY = { 1: 'rare', 2: 'very rare', 3: 'legendary' };
+const SCROLL_PRICES = [25, 75, 150, 300, 500, 1000, 2000, 4000, 8000, 20000];
 function estimateValue(raw) {
   const l = raw.toLowerCase();
   const base = Object.keys(BASE_GEAR).filter(k => l.includes(k)).sort((a, b) => b.length - a.length)[0];
@@ -936,12 +929,13 @@ function renderRequests() {
   lbox.innerHTML = loots.length ? `<h3 class="font-cinzel font-bold text-lg text-emerald-300"><i class="fa-solid fa-bell mr-2"></i>Loot Requests (${loots.length})</h3>` + loots.map(lootReqCard).join('') : '';
 }
 
-/* ---------- Map Folder Structure & Data ---------- */
-const MAP_BASE_URL = 'https://cematson82.github.io/Vicioustechydnd/maps';
+/* ---------- Dynamic Repository Map Folder Structure ---------- */
+const REPO_BASE_URL = 'https://cematson82.github.io/Vicioustechydnd/maps';
 
 const CAMPAIGN_MAPS = {
   lmop: {
     folder: 'lmop',
+    name: 'Lost Mine of Phandelver',
     maps: [
       { name: 'Cragmaw Hideout', file: 'cragmaw_hideout.jpg' },
       { name: 'Redbrand Hideout (Tresendar Manor)', file: 'redbrand_hideout.jpg' },
@@ -951,6 +945,7 @@ const CAMPAIGN_MAPS = {
   },
   cos: {
     folder: 'cos',
+    name: 'Curse of Strahd',
     maps: [
       { name: 'Death House', file: 'death_house.jpg' },
       { name: 'Castle Ravenloft Floorplans', file: 'castle_ravenloft.jpg' },
@@ -960,6 +955,7 @@ const CAMPAIGN_MAPS = {
   },
   toa: {
     folder: 'toa',
+    name: 'Tomb of Annihilation',
     maps: [
       { name: 'Port Nyanzaru', file: 'port_nyanzaru.jpg' },
       { name: 'Fane of the Night Serpent', file: 'fane_of_the_night_serpent.jpg' },
@@ -968,6 +964,7 @@ const CAMPAIGN_MAPS = {
   },
   wbw: {
     folder: 'wbw',
+    name: 'The Wild Beyond the Witchlight',
     maps: [
       { name: 'Witchlight Carnival Ground', file: 'witchlight_carnival.jpg' },
       { name: 'Hither – Downfall Settlement', file: 'hither_downfall.jpg' }
@@ -979,6 +976,13 @@ let mapScale = 1;
 let mapPos = { x: 0, y: 0 };
 let isDraggingMap = false;
 let startDrag = { x: 0, y: 0 };
+
+function initCampaignDropdowns() {
+  const campSelect = $('dm-campaign-select');
+  if (!campSelect) return;
+  campSelect.innerHTML = '<option value="">-- Choose Campaign Folder --</option>' +
+    Object.keys(CAMPAIGN_MAPS).map(key => `<option value="${key}">${CAMPAIGN_MAPS[key].name}</option>`).join('');
+}
 
 function updateMapTransform() {
   const stage = $('map-stage');
@@ -1023,7 +1027,7 @@ function watchMapSync() {
   }, () => {});
 }
 
-/* Handle Campaign Folder Dropdown Selection */
+/* Handle Campaign Folder Dropdown Selection Dynamically */
 $('dm-campaign-select')?.addEventListener('change', (e) => {
   const campaignKey = e.target.value;
   const mapSelect = $('dm-map-select');
@@ -1039,7 +1043,7 @@ $('dm-campaign-select')?.addEventListener('change', (e) => {
 
   const campaign = CAMPAIGN_MAPS[campaignKey];
   mapSelect.innerHTML = '<option value="">-- Select Map --</option>' +
-    campaign.maps.map(m => `<option value="${MAP_BASE_URL}/${campaign.folder}/${m.file}">${m.name}</option>`).join('');
+    campaign.maps.map(m => `<option value="${REPO_BASE_URL}/${campaign.folder}/${m.file}">${m.name}</option>`).join('');
 
   mapSelect.disabled = false;
   mapSelect.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1248,8 +1252,9 @@ async function enterDM() {
 }
 
 /* ---------- boot ---------- */
-try { $('pl-name').value = localStorage.getItem('rf_name') || ''; } catch (e) {}
+try { $('pl-name').value = localStorage.getItem('rf_name'] || ''; } catch (e) {}
 $('pl-name').addEventListener('change', () => watchReveals());
+initCampaignDropdowns();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (LIVE) {
   try {
